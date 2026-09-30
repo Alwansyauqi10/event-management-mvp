@@ -11,3 +11,353 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum UserRole {
+  CUSTOMER
+  ORGANIZER
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELED
+  COMPLETED
+}
+
+enum TransactionStatus {
+  WAITING_FOR_PAYMENT
+  WAITING_FOR_ADMIN_CONFIRMATION
+  DONE
+  REJECTED
+  EXPIRED
+  CANCELED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum PointTransactionType {
+  CREDIT
+  DEBIT
+  REFUND
+  REFERRAL
+}
+
+enum NotificationType {
+  TRANSACTION_ACCEPTED
+  TRANSACTION_REJECTED
+  TRANSACTION_EXPIRED
+  TRANSACTION_CANCELED
+  GENERAL
+}
+
+//Table users
+model User {
+  id             BigInt   @id @default(autoincrement())
+  name           String
+  email          String   @unique
+  password       String
+  role           UserRole @default(CUSTOMER)
+  phone          String
+  profilePicture String?  @map("profile_picture")
+  referralCode   String   @unique @map("referral_code")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  events              Event[]
+  coupons             Coupon[]
+  pointTransactions   PointTransaction[]
+  notifications       Notification[]
+  passwordResetTokens PasswordResetToken[]
+
+  eventTransactions EventTransaction[]
+  reviews           Review[]
+
+  //  User sebagai orang yang memberikan referral.
+  referralsGiven    ReferralUser[] @relation("ReferralReferrer")
+  // User sebagai orang yang menggunakan referral.
+  referralsReceived ReferralUser[] @relation("ReferralReferredUser")
+
+  @@index([deletedAt])
+  @@map("users")
+}
+
+//categories
+model Category {
+  id        BigInt   @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  events Event[]
+
+  @@index([name])
+  @@map("categories")
+}
+
+//event
+model Event {
+  id             BigInt      @id @default(autoincrement())
+  organizerId    BigInt      @map("organizer_id")
+  categoryId     BigInt      @map("category_id")
+  name           String
+  description    String      @db.Text
+  location       String
+  startDate      DateTime    @map("start_date")
+  endDate        DateTime    @map("end_date")
+  availableSeats Int         @map("available_seats")
+  status         EventStatus @default(DRAFT)
+  image          String?
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+  deletedAt      DateTime?   @map("deleted_at")
+
+  organizer         User               @relation(fields: [organizerId], references: [id])
+  category          Category           @relation(fields: [categoryId], references: [id])
+  tickets           Ticket[]
+  vouchers          Voucher[]
+  eventTransactions EventTransaction[]
+
+  @@index([organizerId])
+  @@index([categoryId])
+  @@index([name])
+  @@index([location])
+  @@index([startDate])
+  @@map("events")
+}
+
+//coupon
+model Coupon {
+  id            BigInt       @id @default(autoincrement())
+  userId        BigInt       @map("user_id")
+  code          String       @unique
+  discountType  DiscountType @map("discount_type")
+  discountValue BigInt       @map("discount_value")
+  startAt       DateTime     @map("start_at")
+  endAt         DateTime     @map("end_at")
+  usedAt        DateTime?    @map("used_at")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  user              User               @relation(fields: [userId], references: [id])
+  referralUsers     ReferralUser?
+  eventTransactions EventTransaction[]
+
+  @@index([userId])
+  @@index([code])
+  @@map("coupons")
+}
+
+//ticket
+model Ticket {
+  id                BigInt    @id @default(autoincrement())
+  eventId           BigInt    @map("event_id")
+  name              String
+  price             BigInt
+  quantity          Int       @map("quantity")
+  availableQuantity Int       @map("available_quantity")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  deletedAt         DateTime? @map("deleted_at")
+
+  event            Event             @relation(fields: [eventId], references: [id])
+  transactionItems TransactionItem[]
+
+  @@index([eventId])
+  @@index([price])
+  @@map("tickets")
+}
+
+//voucher
+model Voucher {
+  id            BigInt       @id @default(autoincrement())
+  eventId       BigInt       @map("event_id")
+  code          String       @unique
+  discountType  DiscountType @map("discount_type")
+  discountValue BigInt       @map("discount_value")
+  maxDiscount   BigInt?      @map("max_discount")
+  quota         Int
+  usedQuantity  Int          @default(0) @map("used_quantity")
+  startAt       DateTime     @map("start_at")
+  endAt         DateTime     @map("end_at")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  deletedAt     DateTime?    @map("deleted_at")
+
+  event             Event              @relation(fields: [eventId], references: [id])
+  eventTransactions EventTransaction[]
+
+  @@index([eventId])
+  @@index([code])
+  @@index([startAt, endAt])
+  @@map("vouchers")
+}
+
+//point transaction
+model PointTransaction {
+  id              BigInt               @id @default(autoincrement())
+  userId          BigInt               @map("user_id")
+  type            PointTransactionType
+  amount          BigInt
+  referenceType   String
+  referenceId     BigInt               @map("reference_id")
+  remainingAmount BigInt               @map("remaining_amount")
+  expiredAt       DateTime?            @map("expired_at")
+  createdAt       DateTime             @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([type])
+  @@index([expiredAt])
+  @@index([referenceId])
+  @@map("point_transactions")
+}
+
+//notification
+model Notification {
+  id            BigInt           @id @default(autoincrement())
+  userId        BigInt           @map("user_id")
+  transactionId BigInt?          @map("transaction_id")
+  type          NotificationType
+  title         String
+  message       String
+  isRead        Boolean          @default(false) @map("is_read")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user        User              @relation(fields: [userId], references: [id])
+  transaction EventTransaction? @relation(fields: [transactionId], references: [id])
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+//password reset token
+model PasswordResetToken {
+  id        BigInt    @id @default(autoincrement())
+  userId    BigInt    @map("user_id")
+  token     String    @unique
+  expiredAt DateTime  @map("expired_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiredAt])
+  @@map("password_reset_token")
+}
+
+//refferal user
+model ReferralUser {
+  id             BigInt   @id @default(autoincrement())
+  referrerId     BigInt   @map("referrer_id")
+  referredUserId BigInt   @map("referred_user_id")
+  rewardPoint    BigInt   @default(10000) @map("reward_points")
+  couponId       BigInt   @unique @map("coupon_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  referrer     User   @relation("ReferralReferrer", fields: [referrerId], references: [id])
+  referredUser User   @relation("ReferralReferredUser", fields: [referredUserId], references: [id])
+  coupon       Coupon @relation(fields: [couponId], references: [id])
+
+  @@unique([referredUserId])
+  @@index([referrerId])
+  @@map("referral_users")
+}
+
+//event transaction
+model EventTransaction {
+  id                        BigInt            @id @default(autoincrement())
+  transactionCode           String            @unique @map("transaction_code")
+  userId                    BigInt            @map("user_id")
+  eventId                   BigInt            @map("event_id")
+  voucherId                 BigInt?           @map("voucher_id")
+  couponId                  BigInt?           @map("coupon_id")
+  status                    TransactionStatus @default(WAITING_FOR_PAYMENT)
+  subTotal                  BigInt
+  pointDiscount             BigInt            @default(0) @map("point_discount")
+  voucherDiscount           BigInt            @default(0) @map("voucher_discount")
+  couponDiscount            BigInt            @default(0) @map("coupon_discount")
+  totalAmount               BigInt            @map("total_amount")
+  checkedInAt               DateTime?         @map("checked_in_at")
+  paymentProofDeadline      DateTime?         @map("payment_proof_deadline")
+  adminConfirmationDeadline DateTime?         @map("admin_confirmation_deadline")
+  createdAt                 DateTime          @default(now()) @map("created_at")
+  updatedAt                 DateTime          @updatedAt @map("updated_at")
+
+  user          User              @relation(fields: [userId], references: [id])
+  event         Event             @relation(fields: [eventId], references: [id])
+  coupon        Coupon?           @relation(fields: [couponId], references: [id])
+  voucher       Voucher?          @relation(fields: [voucherId], references: [id])
+  paymentProof  PaymentProof?
+  review        Review?
+  items         TransactionItem[]
+  notifications Notification[]
+
+  @@index([userId])
+  @@index([eventId])
+  @@index([voucherId])
+  @@index([couponId])
+  @@index([status])
+  @@index([paymentProofDeadline])
+  @@index([adminConfirmationDeadline])
+  @@index([createdAt])
+  @@map("event_transactions")
+}
+
+//transaction item
+model TransactionItem {
+  id            BigInt   @id @default(autoincrement())
+  transactionId BigInt   @map("transaction_id")
+  ticketId      BigInt   @map("ticket_id")
+  price         BigInt   @map("price")
+  quantity      Int
+  subTotal      BigInt
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  transaction EventTransaction @relation(fields: [transactionId], references: [id])
+
+  ticket Ticket @relation(fields: [ticketId], references: [id])
+
+  @@index([transactionId])
+  @@index([ticketId])
+  @@map("transaction_items")
+}
+
+//paymen proof
+model PaymentProof {
+  id            BigInt           @id @default(autoincrement())
+  transactionId BigInt           @unique @map("transaction_id")
+  fileUrl       String
+  uploadedAt    DateTime         @default(now()) @map("uploaded_at")
+  transaction   EventTransaction @relation(fields: [transactionId], references: [id])
+
+  @@map("payment_proofs")
+}
+
+//review
+model Review {
+  id            BigInt   @id @default(autoincrement())
+  transactionId BigInt   @unique @map("transaction_id")
+  userId        BigInt   @map("user_id")
+  rating        Int
+  comment       String?  @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  transaction EventTransaction @relation(fields: [transactionId], references: [id])
+  user        User             @relation(fields: [userId], references: [id])
+
+  @@index([transactionId])
+  @@index([userId])
+  @@index([rating])
+  @@map("review")
+}

@@ -1,14 +1,21 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getEvents,
+  getEventLocations,
+  type EventsResponse,
+} from "../services/event.service";
+import { useState, useEffect } from "react";
+import { Input } from "@/components/ui/input";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
-const categories = [
-  "Music",
-  "Workshop",
-  "Festival",
-  "Sports",
-  "Community",
-  "Business",
-];
+const categories = ["Music", "Workshop", "Sports", "Community", "Business"];
 
 const steps = [
   {
@@ -31,47 +38,47 @@ const steps = [
   },
 ];
 
-type Event = {
-  id: string;
-  organizerId: string;
-  categoryId: string;
-  name: string;
-  description: string;
-  location: string;
-  startDate: string;
-  endDate: string;
-  availableSeats: number;
-  status: string;
-  image: string | null;
-  category: {
-    id: string;
-    name: string;
-  };
-};
-
 function Home() {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [location, setLocation] = useState("");
+  const [category, setCategory] = useState("");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const response = await axios.get(
-          "http://localhost:8000/events",
-        );
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
 
-        setEvents(response.data.data);
-      } catch (error) {
-        console.error(error);
-        setError("Failed to load events.");
-      } finally {
-        setIsLoading(false);
-      }
+    return () => {
+      clearTimeout(timer);
     };
+  }, [search]);
 
-    fetchEvents();
-  }, []);
+  const { data, isLoading, isError } = useQuery<EventsResponse>({
+    queryKey: ["events", debouncedSearch, location, category, page],
+    queryFn: () =>
+      getEvents({
+        search: debouncedSearch,
+        location,
+        category,
+        page,
+        limit: 8,
+      }),
+  });
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, location, category]);
+
+  const { data: locationsData } = useQuery({
+    queryKey: ["event-locations"],
+    queryFn: getEventLocations,
+  });
+  const events = data?.data ?? [];
+  const locations = locationsData?.data ?? [];
+
+  const totalPages = data?.meta.totalPages ?? 1;
 
   const formatEventDate = (date: string) => {
     return new Intl.DateTimeFormat("en-GB", {
@@ -94,16 +101,14 @@ function Home() {
         <div className="absolute inset-0 bg-linear-to-r from-white via-white/85 to-white/10" />
 
         <div className="relative mx-auto flex min-h-screen max-w-7xl items-center px-6 pt-18">
-          <div className="w-full max-w-3xl">
+          <div className="w-full max-w-4xl">
             <p className="font-manrope text-sm font-bold uppercase tracking-[0.2em] text-haya-blue">
               Discover. Book. Experience.
             </p>
 
             <h1 className="mt-5 max-w-2xl font-sora text-5xl font-bold leading-[1.05] tracking-tight text-haya-navy md:text-6xl lg:text-7xl">
               Your Next
-              <span className="block text-haya-blue">
-                Experience
-              </span>
+              <span className="block text-haya-blue">Experience</span>
               Starts Here.
             </h1>
 
@@ -129,10 +134,13 @@ function Home() {
                   />
                 </svg>
 
-                <input
+                <Input
+                  // className="w-full border-none bg-transparent outline-none focus:outline-none"
+                  className="w-full border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-none"
                   type="text"
-                  placeholder="Search events, categories, or locations..."
-                  className="w-full bg-transparent font-manrope text-sm text-haya-text outline-none placeholder:text-haya-muted"
+                  placeholder="Search events..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
 
@@ -152,23 +160,19 @@ function Home() {
                   <circle cx="12" cy="11" r="2.5" />
                 </svg>
 
-                <span className="whitespace-nowrap font-manrope text-sm text-haya-text">
-                  All Locations
-                </span>
-
-                <svg
-                  className="ml-3 h-4 w-4 text-haya-muted"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+                <select
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="w-32 cursor-pointer border-none bg-transparent text-sm text-haya-text outline-none"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="m6 9 6 6 6-6"
-                  />
-                </svg>
+                  <option value="">All Locations</option>
+
+                  {locations.map((location) => (
+                    <option key={location} value={location}>
+                      {location}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <button
@@ -184,19 +188,44 @@ function Home() {
                 Popular:
               </span>
 
-              {categories.map((category, index) => (
+              {categories.map((item) => (
                 <button
-                  key={category}
+                  key={item}
                   type="button"
+                  onClick={() => setCategory(item)}
                   className={`rounded-full border px-5 py-2 font-manrope text-sm transition ${
-                    index === 0
+                    category === item
                       ? "border-haya-blue bg-haya-blue text-white"
                       : "border-haya-border bg-white/80 text-haya-text hover:border-haya-blue hover:text-haya-blue"
                   }`}
                 >
-                  {category}
+                  {item}
                 </button>
               ))}
+
+              <button
+                type="button"
+                onClick={() => setCategory("")}
+                className={`flex items-center gap-2 rounded-full border px-4 py-2 font-manrope text-sm transition ${
+                  category === ""
+                    ? "border-haya-blue bg-haya-blue text-white"
+                    : "border-haya-blue bg-white text-haya-blue hover:bg-haya-blue hover:text-white"
+                }`}
+              >
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <rect x="4" y="4" width="6" height="6" rx="1" />
+                  <rect x="14" y="4" width="6" height="6" rx="1" />
+                  <rect x="4" y="14" width="6" height="6" rx="1" />
+                  <rect x="14" y="14" width="6" height="6" rx="1" />
+                </svg>
+                All Categories
+              </button>
             </div>
           </div>
         </div>
@@ -237,13 +266,13 @@ function Home() {
             </div>
           )}
 
-          {!isLoading && error && (
+          {!isLoading && isError && (
             <div className="mt-8 rounded-xl border border-red-200 bg-red-50 px-5 py-4 font-manrope text-sm text-red-600">
-              {error}
+              Failed to load events.
             </div>
           )}
 
-          {!isLoading && !error && events.length === 0 && (
+          {!isLoading && !isError && events.length === 0 && (
             <div className="mt-8 rounded-xl border border-haya-border bg-haya-background px-6 py-12 text-center">
               <h3 className="font-sora text-lg font-semibold text-haya-navy">
                 No events available
@@ -256,7 +285,7 @@ function Home() {
           )}
 
           {/* Section 2 */}
-          {!isLoading && !error && events.length > 0 && (
+          {!isLoading && !isError && events.length > 0 && (
             <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {events.map((event) => (
                 <article
@@ -265,10 +294,7 @@ function Home() {
                 >
                   <div className="relative overflow-hidden">
                     <img
-                      src={
-                        event.image ||
-                        "/Hero%20Image%20Home.png"
-                      }
+                      src={event.image || "/Hero%20Image%20Home.png"}
                       alt={event.name}
                       className="h-52 w-full object-cover transition duration-500 group-hover:scale-105"
                     />
@@ -325,9 +351,7 @@ function Home() {
                         />
                       </svg>
 
-                      <span>
-                        {formatEventDate(event.startDate)}
-                      </span>
+                      <span>{formatEventDate(event.startDate)}</span>
                     </div>
 
                     <div className="mt-2 flex items-center gap-2 font-manrope text-sm text-haya-muted">
@@ -366,6 +390,69 @@ function Home() {
               See All Events →
             </a>
           </div>
+
+          {!isLoading && !isError && totalPages > 1 && (
+            <Pagination className="mt-20">
+              <PaginationContent className="gap-2">
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+
+                      if (page > 1) {
+                        setPage(page - 1);
+                      }
+                    }}
+                    className={`rounded-full border border-haya-border bg-white font-manrope text-sm font-medium text-haya-text transition hover:border-haya-blue hover:bg-haya-blue-soft hover:text-haya-blue ${
+                      page === 1 ? "pointer-events-none opacity-40" : ""
+                    }`}
+                  />
+                </PaginationItem>
+
+                {Array.from(
+                  { length: totalPages },
+                  (_, index) => index + 1,
+                ).map((pageNumber) => (
+                  <PaginationItem key={pageNumber}>
+                    <PaginationLink
+                      href="#"
+                      isActive={page === pageNumber}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setPage(pageNumber);
+                      }}
+                      className={`h-10 w-10 rounded-full font-manrope text-sm font-semibold transition ${
+                        page === pageNumber
+                          ? "border-haya-blue bg-haya-blue text-white shadow-md shadow-haya-blue/20 hover:bg-haya-blue-light hover:text-white"
+                          : "border-haya-border bg-white text-haya-text hover:border-haya-blue hover:bg-haya-blue-soft hover:text-haya-blue"
+                      }`}
+                    >
+                      {pageNumber}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+
+                      if (page < totalPages) {
+                        setPage(page + 1);
+                      }
+                    }}
+                    className={`rounded-full border border-haya-border bg-white font-manrope text-sm font-medium text-haya-text transition hover:border-haya-blue hover:bg-haya-blue-soft hover:text-haya-blue ${
+                      page === totalPages
+                        ? "pointer-events-none opacity-40"
+                        : ""
+                    }`}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
         </div>
       </section>
 
@@ -382,8 +469,8 @@ function Home() {
             </h2>
 
             <p className="mt-4 font-manrope text-base leading-7 text-haya-muted">
-              Everything you need to find the right event and turn it
-              into a memorable experience.
+              Everything you need to find the right event and turn it into a
+              memorable experience.
             </p>
           </div>
 
@@ -391,10 +478,7 @@ function Home() {
             <div className="absolute left-[16.66%] right-[16.66%] top-7 hidden h-px bg-haya-blue/20 md:block" />
 
             {steps.map((step) => (
-              <div
-                key={step.number}
-                className="relative z-10 text-center"
-              >
+              <div key={step.number} className="relative z-10 text-center">
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-haya-blue font-sora text-sm font-bold text-white shadow-lg shadow-haya-blue/20">
                   {step.number}
                 </div>

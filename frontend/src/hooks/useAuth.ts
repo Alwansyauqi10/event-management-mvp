@@ -1,6 +1,10 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/axios";
-import type { LoginSchema, RegisterSchema } from "@/schema/auth";
+import type {
+  LoginSchema,
+  RegisterSchema,
+  UpdateProfileSchema,
+} from "@/schema/auth";
 import { useNavigate } from "react-router";
 import type { AxiosError } from "axios";
 
@@ -42,6 +46,32 @@ export const useLogin = () => {
     },
     onError: (error: AxiosError<{ message: string }>) => {
       alert(error.response?.data.message || "Login failed!");
+    },
+  });
+};
+export const useUpdateProfile = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: UpdateProfileSchema) => {
+      const response = await api.put("/auth/edit-profile", {
+        name: data.name,
+        phone: data.phone,
+      });
+
+      return response.data;
+    },
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["profile"],
+      });
+
+      alert("Profile berhasil diperbarui!");
+    },
+
+    onError: (error: AxiosError<{ message: string }>) => {
+      alert(error.response?.data?.message || "Gagal memperbarui profile");
     },
   });
 };

@@ -1,10 +1,37 @@
+import { useUpdateProfile } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import { updateProfileSchema, type UpdateProfileSchema } from "@/schema/auth";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
 
 function ProfilePage() {
   const navigate = useNavigate();
 
   const { data: user, isLoading, isError } = useProfile();
+  const [isEditing, setIsEditing] = useState(false);
+  const { mutate, isPending } = useUpdateProfile();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<UpdateProfileSchema>({
+    resolver: zodResolver(updateProfileSchema),
+    values: {
+      name: user?.name ?? "",
+      phone: user?.phone ?? "",
+    },
+  });
+
+  const handleUpdateProfile = (values: UpdateProfileSchema) => {
+    mutate(values, {
+      onSuccess: () => {
+        setIsEditing(false);
+      },
+    });
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
@@ -89,71 +116,149 @@ function ProfilePage() {
             </div>
           </div>
 
-          <div className="p-6">
-            <h3 className="mb-5 text-lg font-semibold text-slate-900">
-              Informasi Akun
-            </h3>
+          <div className="p-6 ">
+            <div className="mb-5 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-slate-900">
+                Informasi Akun
+              </h3>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-xl bg-slate-50 p-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                  Nama
-                </p>
+              {!isEditing && (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                >
+                  Edit Profile
+                </button>
+              )}
+            </div>
 
-                <p className="mt-1 font-medium text-slate-900">{user.name}</p>
-              </div>
+            {isEditing ? (
+              <form onSubmit={handleSubmit(handleUpdateProfile)}>
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div>
+                    <label
+                      htmlFor="name"
+                      className="mb-2 block text-sm font-medium text-slate-700"
+                    >
+                      Nama
+                    </label>
 
-              <div className="rounded-xl bg-slate-50 p-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                  Email
-                </p>
+                    <input
+                      id="name"
+                      {...register("name")}
+                      className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    />
 
-                <p className="mt-1 break-all font-medium text-slate-900">
-                  {user.email}
-                </p>
-              </div>
+                    {errors.name && (
+                      <p className="mt-1 text-sm text-red-500">
+                        {errors.name.message}
+                      </p>
+                    )}
+                  </div>
 
-              <div className="rounded-xl bg-slate-50 p-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                  Nomor Telepon
-                </p>
+                  <div>
+                    <label
+                      htmlFor="phone"
+                      className="mb-2 block text-sm font-medium text-slate-700"
+                    >
+                      Nomor Telepon
+                    </label>
 
-                <p className="mt-1 font-medium text-slate-900">
-                  {user.phone || "-"}
-                </p>
-              </div>
+                    <input
+                      id="phone"
+                      {...register("phone")}
+                      className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    />
 
-              <div className="rounded-xl bg-slate-50 p-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                  Role
-                </p>
+                    {errors.phone && (
+                      <p className="mt-1 text-sm text-red-500">
+                        {errors.phone.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
 
-                <p className="mt-1 font-medium capitalize text-slate-900">
-                  {user.role}
-                </p>
-              </div>
-
-              <div className="rounded-xl bg-slate-50 p-4 sm:col-span-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                  Referral Code
-                </p>
-
-                <div className="mt-2 flex items-center justify-between gap-3">
-                  <p className="font-mono font-semibold tracking-wider text-blue-600">
-                    {user.referralCode}
-                  </p>
+                <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-6">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    disabled={isPending}
+                    className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
 
                   <button
-                    onClick={() =>
-                      navigator.clipboard.writeText(user.referralCode)
-                    }
-                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
+                    type="submit"
+                    disabled={isPending}
+                    className="rounded-xl bg-blue-600 px-5 py-2.5 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    Copy
+                    {isPending ? "Menyimpan..." : "Simpan Perubahan"}
                   </button>
                 </div>
+              </form>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-xl bg-slate-50 p-4">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Nama
+                  </p>
+
+                  <p className="mt-1 font-medium text-slate-900">{user.name}</p>
+                </div>
+
+                <div className="rounded-xl bg-slate-50 p-4">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Email
+                  </p>
+
+                  <p className="mt-1 break-all font-medium text-slate-900">
+                    {user.email}
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-slate-50 p-4">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Nomor Telepon
+                  </p>
+
+                  <p className="mt-1 font-medium text-slate-900">
+                    {user.phone || "-"}
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-slate-50 p-4">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Role
+                  </p>
+
+                  <p className="mt-1 font-medium capitalize text-slate-900">
+                    {user.role}
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-slate-50 p-4 sm:col-span-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Referral Code
+                  </p>
+
+                  <div className="mt-2 flex items-center justify-between gap-3">
+                    <p className="font-mono font-semibold tracking-wider text-blue-600">
+                      {user.referralCode}
+                    </p>
+
+                    <button
+                      onClick={() =>
+                        navigator.clipboard.writeText(user.referralCode)
+                      }
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="mt-6 flex justify-end border-t border-slate-100 pt-6">
               <button

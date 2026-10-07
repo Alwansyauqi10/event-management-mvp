@@ -1,12 +1,14 @@
 import argon from "argon2";
+import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma.js";
 import { ApiError } from "../utils/api-error.js";
-import { User } from "../generated/prisma/client.js";
-import jwt from "jsonwebtoken";
+import {
+  LoginSchema,
+  RegisterSchema,
+  UpdateProfileSchema,
+} from "../validator/auth.validator.js";
 
-export const registerService = async (
-  body: Pick<User, "name" | "email" | "password" | "phone">,
-) => {
+export const registerService = async (body: RegisterSchema) => {
   //1. cek email udah kepake atau belum
   const user = await prisma.user.findUnique({
     where: { email: body.email },
@@ -35,7 +37,7 @@ export const registerService = async (
   return { message: "register success!" };
 };
 
-export const loginService = async (body: Pick<User, "email" | "password">) => {
+export const loginService = async (body: LoginSchema) => {
   //1. cek dulu email di db ada atau tidak
   const user = await prisma.user.findUnique({
     where: { email: body.email },
@@ -87,5 +89,30 @@ export const profileService = async (userId: string) => {
       referralCode: true,
     },
   });
+  return user;
+};
+export const updateProfileService = async (
+  userId: string,
+  body: UpdateProfileSchema,
+) => {
+  const user = await prisma.user.update({
+    where: {
+      id: BigInt(userId),
+    },
+    data: {
+      name: body.name,
+      phone: body.phone,
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      phone: true,
+      profilePicture: true,
+      referralCode: true,
+    },
+  });
+
   return user;
 };

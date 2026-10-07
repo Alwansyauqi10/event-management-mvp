@@ -1,57 +1,28 @@
-import { useEffect, useState } from "react";
+import { useProfile } from "@/hooks/useProfile";
 import { useNavigate } from "react-router";
-import { api } from "../lib/axios";
-
-type UserProfile = {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  phone: string;
-  profilePicture: string | null;
-  referralCode: string;
-};
 
 function ProfilePage() {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-
   const navigate = useNavigate();
 
-  const getProfile = async () => {
-    try {
-      const response = await api.get("/auth/profile");
-
-      setUser(response.data.user);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: user, isLoading, isError } = useProfile();
 
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     navigate("/login");
   };
 
-  useEffect(() => {
-    getProfile();
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex min-h-[70vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600" />
-
           <p className="text-sm text-slate-500">Memuat profile...</p>
         </div>
       </div>
     );
   }
 
-  if (!user) {
+  if (isError || !user) {
     return (
       <div className="flex min-h-[70vh] items-center justify-center px-4">
         <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-lg">

@@ -25,7 +25,7 @@ export const useRegister = () => {
       navigate("/login");
     },
     onError: (error: AxiosError<{ message: string }>) => {
-      toast.error(error.response?.data.message || "Register failed!");
+      toast.error(error.response?.data?.message || "Register failed!");
     },
   });
 };
@@ -46,7 +46,7 @@ export const useLogin = () => {
       navigate("/profile");
     },
     onError: (error: AxiosError<{ message: string }>) => {
-      toast.error(error.response?.data.message || "Login failed!");
+      toast.error(error.response?.data?.message || "Login failed!");
     },
   });
 };
@@ -76,3 +76,4 @@ export const useUpdateProfile = () => {
     },
   });
 };
+

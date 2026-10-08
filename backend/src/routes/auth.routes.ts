@@ -31,6 +31,7 @@ authRoutes.put(
   updateProfileController,
 );
 
+
 authRoutes.get(
   "/organizer-test",
   verifyToken(process.env.JWT_SECRET!),

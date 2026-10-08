@@ -1,6 +1,10 @@
-import { useUpdateProfile } from "@/hooks/useAuth";
+import {  useUpdateProfile } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
-import { updateProfileSchema, type UpdateProfileSchema } from "@/schema/auth";
+import {
+  updateProfileSchema,
+  type ChangePasswordSchema,
+  type UpdateProfileSchema,
+} from "@/schema/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -16,8 +20,10 @@ function ProfilePage() {
   const [pendingData, setPendingData] = useState<UpdateProfileSchema | null>(
     null,
   );
-  const { mutate, isPending } = useUpdateProfile();
+  
 
+  const { mutate, isPending } = useUpdateProfile();
+ 
   const {
     register,
     handleSubmit,
@@ -71,7 +77,7 @@ function ProfilePage() {
       </div>
     );
   }
-
+  
   if (isError || !user) {
     return (
       <div className="flex min-h-[70vh] items-center justify-center px-4">
@@ -132,6 +138,7 @@ function ProfilePage() {
           </div>
         </div>
       )}
+      
       {showLogoutConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
@@ -346,7 +353,7 @@ function ProfilePage() {
                 </div>
               </div>
             )}
-
+            
             <div className="mt-6 flex justify-end border-t border-slate-100 pt-6">
               <button
                 onClick={() => setShowLogoutConfirm(true)}

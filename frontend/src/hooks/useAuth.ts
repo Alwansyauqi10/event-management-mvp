@@ -1,8 +1,13 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/axios";
-import type { LoginSchema, RegisterSchema } from "@/schema/auth";
+import type {
+  LoginSchema,
+  RegisterSchema,
+  UpdateProfileSchema,
+} from "@/schema/auth";
 import { useNavigate } from "react-router";
 import type { AxiosError } from "axios";
+import { toast } from "sonner";
 
 export const useRegister = () => {
   const navigate = useNavigate();
@@ -16,11 +21,11 @@ export const useRegister = () => {
       });
     },
     onSuccess: () => {
-      alert("Register success!");
+      toast.success("Register success!");
       navigate("/login");
     },
     onError: (error: AxiosError<{ message: string }>) => {
-      alert(error.response?.data.message || "Register failed!");
+      toast.error(error.response?.data?.message || "Register failed!");
     },
   });
 };
@@ -37,11 +42,38 @@ export const useLogin = () => {
     },
     onSuccess: (data) => {
       localStorage.setItem("accessToken", data.accessToken);
-      alert("Login success!");
+      toast.success("Login success!");
       navigate("/profile");
     },
     onError: (error: AxiosError<{ message: string }>) => {
-      alert(error.response?.data.message || "Login failed!");
+      toast.error(error.response?.data?.message || "Login failed!");
     },
   });
 };
+export const useUpdateProfile = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: UpdateProfileSchema) => {
+      const response = await api.put("/auth/edit-profile", {
+        name: data.name,
+        phone: data.phone,
+      });
+
+      return response.data;
+    },
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["profile"],
+      });
+
+      toast.success("Profile berhasil diperbarui!");
+    },
+
+    onError: (error: AxiosError<{ message: string }>) => {
+      toast.error(error.response?.data?.message || "Gagal memperbarui profile");
+    },
+  });
+};
+

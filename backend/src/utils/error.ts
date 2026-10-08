@@ -6,8 +6,6 @@ export const globalError = (
   res: Response,
   next: NextFunction,
 ) => {
-  console.log("ERROR MESSAGE:", err.message);
-  console.log("ERROR STATUS:", err.status);
   const message = err.message || "something went wrong";
   const status = err.status || 500;
 

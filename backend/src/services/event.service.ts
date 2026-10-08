@@ -74,3 +74,16 @@ export const getEventLocationsService = async () => {
 
   return locations.map((event) => event.location);
 };
+
+export const getEventByIdService = async (id: bigint) => {
+  const event = await prisma.event.findUnique({
+    where: {
+      id,
+    },
+    include: {
+      category: true,
+    },
+  });
+
+  return event;
+};

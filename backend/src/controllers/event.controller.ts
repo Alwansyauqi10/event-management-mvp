@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
-import { getEventsService, getEventLocationsService } from "../services/event.service.js";
+import { getEventsService, getEventLocationsService, getEventByIdService,
+ } from "../services/event.service.js";
 
 export const getEventsController = async (
   req: Request,
@@ -85,6 +86,54 @@ export const getEventLocationsController = async (
 
     res.status(500).json({
       message: "Failed to get event locations",
+    });
+  }
+};
+
+export const getEventByIdController = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const idParam = req.params.id;
+
+    if (typeof idParam !== "string") {
+      res.status(400).json({
+        message: "Invalid event id",
+      });
+      return;
+    }
+
+    const id = BigInt(idParam);
+
+    const event = await getEventByIdService(id);
+
+    if (!event) {
+      res.status(404).json({
+        message: "Event not found",
+      });
+      return;
+    }
+
+    const serializedEvent = {
+      ...event,
+      id: event.id.toString(),
+      organizerId: event.organizerId.toString(),
+      categoryId: event.categoryId.toString(),
+      category: {
+        ...event.category,
+        id: event.category.id.toString(),
+      },
+    };
+
+    res.status(200).json({
+      data: serializedEvent,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Failed to get event",
     });
   }
 };

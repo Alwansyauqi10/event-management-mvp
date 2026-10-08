@@ -1,6 +1,11 @@
-import { useUpdateProfile } from "@/hooks/useAuth";
+import { useChangePassword, useUpdateProfile } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
-import { updateProfileSchema, type UpdateProfileSchema } from "@/schema/auth";
+import {
+  changePasswordSchema,
+  updateProfileSchema,
+  type ChangePasswordSchema,
+  type UpdateProfileSchema,
+} from "@/schema/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -16,7 +21,13 @@ function ProfilePage() {
   const [pendingData, setPendingData] = useState<UpdateProfileSchema | null>(
     null,
   );
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
+  const [pendingPasswordData, setPendingPasswordData] =
+    useState<ChangePasswordSchema | null>(null);
+
   const { mutate, isPending } = useUpdateProfile();
+  const { mutate: changePassword, isPending: isChangingPassword } =
+    useChangePassword();
 
   const {
     register,
@@ -71,7 +82,33 @@ function ProfilePage() {
       </div>
     );
   }
+  const {
+    register: registerPassword,
+    handleSubmit: handlePasswordSubmit,
+    reset: resetPassword,
+    formState: { errors: passwordErrors },
+  } = useForm<ChangePasswordSchema>({
+    resolver: zodResolver(changePasswordSchema),
+  });
+  const handleChangePassword = (values: ChangePasswordSchema) => {
+    setPendingPasswordData(values);
+    setShowPasswordConfirm(true);
+  };
+  const handleConfirmChangePassword = () => {
+    if (!pendingPasswordData) return;
 
+    changePassword(pendingPasswordData, {
+      onSuccess: () => {
+        resetPassword();
+        setShowPasswordConfirm(false);
+        setPendingPasswordData(null);
+      },
+    });
+  };
+  const handleCancelPasswordConfirm = () => {
+    setShowPasswordConfirm(false);
+    setPendingPasswordData(null);
+  };
   if (isError || !user) {
     return (
       <div className="flex min-h-[70vh] items-center justify-center px-4">
@@ -127,6 +164,39 @@ function ProfilePage() {
                 className="rounded-xl bg-blue-600 px-5 py-2.5 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isPending ? "Menyimpan..." : "Ya, Simpan"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showPasswordConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h2 className="text-xl font-bold text-slate-900">
+              Konfirmasi Perubahan Password
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Yakin ingin mengubah password akun kamu?
+            </p>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleCancelPasswordConfirm}
+                disabled={isChangingPassword}
+                className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+              >
+                Batal
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmChangePassword}
+                disabled={isChangingPassword}
+                className="rounded-xl bg-blue-600 px-5 py-2.5 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isChangingPassword ? "Mengubah..." : "Ya, Ubah Password"}
               </button>
             </div>
           </div>
@@ -346,7 +416,76 @@ function ProfilePage() {
                 </div>
               </div>
             )}
+            <div className="mt-8 border-t border-slate-100 pt-6">
+              <h3 className="text-lg font-semibold text-slate-900">
+                Ubah Password
+              </h3>
 
+              <p className="mt-1 text-sm text-slate-500">
+                Gunakan password baru yang kuat untuk menjaga keamanan akun.
+              </p>
+
+              <form
+                onSubmit={handlePasswordSubmit(handleChangePassword)}
+                className="mt-5 space-y-5"
+              >
+                {/* current password */}
+                <div>
+                  <label
+                    htmlFor="currentPassword"
+                    className="mb-2 block text-sm font-medium text-slate-700"
+                  >
+                    Password Lama
+                  </label>
+
+                  <input
+                    id="currentPassword"
+                    type="password"
+                    {...registerPassword("currentPassword")}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+
+                  {passwordErrors.currentPassword && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {passwordErrors.currentPassword.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* new password */}
+                <div>
+                  <label
+                    htmlFor="newPassword"
+                    className="mb-2 block text-sm font-medium text-slate-700"
+                  >
+                    Password Baru
+                  </label>
+
+                  <input
+                    id="newPassword"
+                    type="password"
+                    {...registerPassword("newPassword")}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+
+                  {passwordErrors.newPassword && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {passwordErrors.newPassword.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={isChangingPassword}
+                    className="rounded-xl bg-blue-600 px-5 py-2.5 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Ubah Password
+                  </button>
+                </div>
+              </form>
+            </div>
             <div className="mt-6 flex justify-end border-t border-slate-100 pt-6">
               <button
                 onClick={() => setShowLogoutConfirm(true)}

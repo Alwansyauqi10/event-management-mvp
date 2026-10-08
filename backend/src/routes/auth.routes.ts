@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  changePasswordController,
   loginController,
   profileController,
   registerController,
@@ -9,6 +10,7 @@ import { verifyToken } from "../middleware/auth.middleware.js";
 import { checkRole } from "../middleware/role.middleware.js";
 import { validate } from "../middleware/validator.middleware.js";
 import {
+  changePasswordSchema,
   loginSchema,
   registerSchema,
   updateProfileSchema,
@@ -29,6 +31,12 @@ authRoutes.put(
   verifyToken(process.env.JWT_SECRET!),
   validate(updateProfileSchema),
   updateProfileController,
+);
+authRoutes.put(
+  "/change-password",
+  verifyToken(process.env.JWT_SECRET!),
+  validate(changePasswordSchema),
+  changePasswordController,
 );
 
 authRoutes.get(

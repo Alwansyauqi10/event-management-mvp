@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/axios";
 import type {
+  ChangePasswordSchema,
   LoginSchema,
   RegisterSchema,
   UpdateProfileSchema,
@@ -25,7 +26,7 @@ export const useRegister = () => {
       navigate("/login");
     },
     onError: (error: AxiosError<{ message: string }>) => {
-      toast.error(error.response?.data.message || "Register failed!");
+      toast.error(error.response?.data?.message || "Register failed!");
     },
   });
 };
@@ -46,7 +47,7 @@ export const useLogin = () => {
       navigate("/profile");
     },
     onError: (error: AxiosError<{ message: string }>) => {
-      toast.error(error.response?.data.message || "Login failed!");
+      toast.error(error.response?.data?.message || "Login failed!");
     },
   });
 };
@@ -73,6 +74,24 @@ export const useUpdateProfile = () => {
 
     onError: (error: AxiosError<{ message: string }>) => {
       toast.error(error.response?.data?.message || "Gagal memperbarui profile");
+    },
+  });
+};
+
+export const useChangePassword = () => {
+  return useMutation({
+    mutationFn: async (data: ChangePasswordSchema) => {
+      const response = await api.put("/auth/change-password", data);
+
+      return response.data;
+    },
+
+    onSuccess: () => {
+      toast.success("Password berhasil diubah!");
+    },
+
+    onError: (error: AxiosError<{ message: string }>) => {
+      toast.error(error.response?.data?.message || "Gagal mengubah password");
     },
   });
 };

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import {
+  changePasswordService,
   loginService,
   profileService,
   registerService,
@@ -42,4 +43,11 @@ export const updateProfileController = async (req: Request, res: Response) => {
       id: user.id.toString(),
     },
   });
+};
+export const changePasswordController = async (req: Request, res: Response) => {
+  const userId = res.locals.user.id;
+
+  const result = await changePasswordService(userId, req.body);
+
+  res.status(200).json(result);
 };

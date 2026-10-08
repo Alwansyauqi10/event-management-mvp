@@ -7,6 +7,7 @@ import type {
 } from "@/schema/auth";
 import { useNavigate } from "react-router";
 import type { AxiosError } from "axios";
+import { toast } from "sonner";
 
 export const useRegister = () => {
   const navigate = useNavigate();
@@ -20,11 +21,11 @@ export const useRegister = () => {
       });
     },
     onSuccess: () => {
-      alert("Register success!");
+      toast.success("Register success!");
       navigate("/login");
     },
     onError: (error: AxiosError<{ message: string }>) => {
-      alert(error.response?.data.message || "Register failed!");
+      toast.error(error.response?.data.message || "Register failed!");
     },
   });
 };
@@ -41,11 +42,11 @@ export const useLogin = () => {
     },
     onSuccess: (data) => {
       localStorage.setItem("accessToken", data.accessToken);
-      alert("Login success!");
+      toast.success("Login success!");
       navigate("/profile");
     },
     onError: (error: AxiosError<{ message: string }>) => {
-      alert(error.response?.data.message || "Login failed!");
+      toast.error(error.response?.data.message || "Login failed!");
     },
   });
 };
@@ -67,11 +68,11 @@ export const useUpdateProfile = () => {
         queryKey: ["profile"],
       });
 
-      alert("Profile berhasil diperbarui!");
+      toast.success("Profile berhasil diperbarui!");
     },
 
     onError: (error: AxiosError<{ message: string }>) => {
-      alert(error.response?.data?.message || "Gagal memperbarui profile");
+      toast.error(error.response?.data?.message || "Gagal memperbarui profile");
     },
   });
 };

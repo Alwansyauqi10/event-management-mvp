@@ -11,6 +11,11 @@ function ProfilePage() {
 
   const { data: user, isLoading, isError } = useProfile();
   const [isEditing, setIsEditing] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [pendingData, setPendingData] = useState<UpdateProfileSchema | null>(
+    null,
+  );
   const { mutate, isPending } = useUpdateProfile();
 
   const {
@@ -26,16 +31,34 @@ function ProfilePage() {
   });
 
   const handleUpdateProfile = (values: UpdateProfileSchema) => {
-    mutate(values, {
-      onSuccess: () => {
-        setIsEditing(false);
-      },
-    });
+    setPendingData(values);
+    setShowConfirm(true);
   };
-
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setPendingData(null);
+  };
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     navigate("/login");
+  };
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
+  };
+  const handleConfirmUpdate = () => {
+    if (!pendingData) return;
+
+    mutate(pendingData, {
+      onSuccess: () => {
+        setIsEditing(false);
+        setShowConfirm(false);
+        setPendingData(null);
+      },
+    });
+  };
+  const handleCancelConfirm = () => {
+    setShowConfirm(false);
+    setPendingData(null);
   };
 
   if (isLoading) {
@@ -76,6 +99,70 @@ function ProfilePage() {
 
   return (
     <div className="min-h-[80vh] bg-slate-50 px-4 py-10">
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h2 className="text-xl font-bold text-slate-900">
+              Konfirmasi Perubahan
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Yakin ingin menyimpan perubahan profile kamu?
+            </p>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleCancelConfirm}
+                disabled={isPending}
+                className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+              >
+                Batal
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmUpdate}
+                disabled={isPending}
+                className="rounded-xl bg-blue-600 px-5 py-2.5 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isPending ? "Menyimpan..." : "Ya, Simpan"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h2 className="text-xl font-bold text-slate-900">
+              Konfirmasi Logout
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Yakin ingin keluar dari akun kamu?
+            </p>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleCancelLogout}
+                className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 font-semibold text-slate-600 transition hover:bg-slate-50"
+              >
+                Batal
+              </button>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-xl bg-red-600 px-5 py-2.5 font-semibold text-white transition hover:bg-red-700"
+              >
+                Ya, Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="mx-auto max-w-3xl">
         <div className="mb-6">
           <p className="text-sm font-medium text-blue-600">Account</p>
@@ -181,7 +268,7 @@ function ProfilePage() {
                 <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-6">
                   <button
                     type="button"
-                    onClick={() => setIsEditing(false)}
+                    onClick={handleCancelEdit}
                     disabled={isPending}
                     className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
                   >
@@ -262,7 +349,7 @@ function ProfilePage() {
 
             <div className="mt-6 flex justify-end border-t border-slate-100 pt-6">
               <button
-                onClick={handleLogout}
+                onClick={() => setShowLogoutConfirm(true)}
                 className="rounded-xl border border-red-200 bg-red-50 px-5 py-2.5 font-semibold text-red-600 transition hover:bg-red-100 active:scale-[0.98]"
               >
                 Logout

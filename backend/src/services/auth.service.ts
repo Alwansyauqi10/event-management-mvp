@@ -7,7 +7,6 @@ import jwt from "jsonwebtoken";
 export const registerService = async (
   body: Pick<User, "name" | "email" | "password" | "phone">,
 ) => {
-  console.log(body);
   //1. cek email udah kepake atau belum
   const user = await prisma.user.findUnique({
     where: { email: body.email },

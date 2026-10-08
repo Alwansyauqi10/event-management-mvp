@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { ApiError } from "../utils/api-error.js";
 import jwt from "jsonwebtoken";
 
-export const verifyToken = (secreetKey: string) => {
+export const verifyToken = (secretKey: string) => {
   return (req: Request, res: Response, next: NextFunction) => {
     //ambil authorization bagian setelah bearernya
     const token = req.headers.authorization?.split(" ")[1];
@@ -14,7 +14,7 @@ export const verifyToken = (secreetKey: string) => {
 
     try {
       //kalau token valid maka berisi data yang dimasukkan saat login
-      const payload = jwt.verify(token, secreetKey);
+      const payload = jwt.verify(token, secretKey);
       res.locals.user = payload;
       next();
     } catch (error) {

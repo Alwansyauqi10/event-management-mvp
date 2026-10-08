@@ -1,58 +1,26 @@
-import { useState } from "react";
-import { api } from "../lib/axios";
-import { Link, useNavigate } from "react-router";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Link } from "react-router";
+import { loginSchema, type LoginSchema } from "@/schema/auth";
+import { useLogin } from "@/hooks/useAuth";
 
 function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginSchema>({
+    resolver: zodResolver(loginSchema),
+  });
 
-  const navigate = useNavigate();
+  const { mutate, isPending } = useLogin();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    try {
-      setLoading(true);
-
-      const response = await api.post("/auth/login", {
-        email,
-        password,
-      });
-
-      const { accessToken } = response.data;
-
-      localStorage.setItem("accessToken", accessToken);
-
-      console.log(response.data);
-
-      await getProfile();
-
-      alert("Login berhasil");
-      navigate("/profile");
-    } catch (error: any) {
-      console.error(error);
-
-      const message = error.response?.data?.message;
-
-      alert(message || "Email atau password salah");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getProfile = async () => {
-    try {
-      const response = await api.get("/auth/profile");
-
-      console.log("Profile:", response.data);
-    } catch (error) {
-      console.error("Get profile error:", error);
-    }
+  const handleLogin = (values: LoginSchema) => {
+    mutate(values);
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-linear-to-br from-slate-100 via-white to-blue-100 px-4 ">
+    <div className="flex min-h-screen items-center justify-center bg-linear-to-br from-slate-100 via-white to-blue-100 px-4">
       <div className="w-full max-w-md">
         <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/60">
           <div className="mb-8 text-center">
@@ -69,7 +37,7 @@ function LoginPage() {
             </p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form onSubmit={handleSubmit(handleLogin)} className="space-y-5">
             <div>
               <label
                 htmlFor="email"
@@ -82,11 +50,15 @@ function LoginPage() {
                 id="email"
                 type="email"
                 placeholder="nama@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                {...register("email")}
                 className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
               />
+
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
             <div>
@@ -101,11 +73,15 @@ function LoginPage() {
                 id="password"
                 type="password"
                 placeholder="Masukkan password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+                {...register("password")}
                 className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
               />
+
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
 
             <div className="flex justify-end">
@@ -119,10 +95,10 @@ function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={isPending}
               className="w-full rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white shadow-lg shadow-blue-200 transition hover:bg-blue-700 hover:shadow-blue-300 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loading ? "Sedang login..." : "Login"}
+              {isPending ? "Sedang login..." : "Login"}
             </button>
           </form>
 

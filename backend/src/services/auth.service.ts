@@ -1,12 +1,15 @@
 import argon from "argon2";
+import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma.js";
 import { ApiError } from "../utils/api-error.js";
-import { User } from "../generated/prisma/client.js";
-import jwt from "jsonwebtoken";
+import {
+  ChangePasswordSchema,
+  LoginSchema,
+  RegisterSchema,
+  UpdateProfileSchema,
+} from "../validator/auth.validator.js";
 
-export const registerService = async (
-  body: Pick<User, "name" | "email" | "password" | "phone">,
-) => {
+export const registerService = async (body: RegisterSchema) => {
   //1. cek email udah kepake atau belum
   const user = await prisma.user.findUnique({
     where: { email: body.email },
@@ -35,7 +38,7 @@ export const registerService = async (
   return { message: "register success!" };
 };
 
-export const loginService = async (body: Pick<User, "email" | "password">) => {
+export const loginService = async (body: LoginSchema) => {
   //1. cek dulu email di db ada atau tidak
   const user = await prisma.user.findUnique({
     where: { email: body.email },
@@ -88,4 +91,76 @@ export const profileService = async (userId: string) => {
     },
   });
   return user;
+};
+export const updateProfileService = async (
+  userId: string,
+  body: UpdateProfileSchema,
+) => {
+  const user = await prisma.user.update({
+    where: {
+      id: BigInt(userId),
+    },
+    data: {
+      name: body.name,
+      phone: body.phone,
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      phone: true,
+      profilePicture: true,
+      referralCode: true,
+    },
+  });
+
+  return user;
+};
+
+export const changePasswordService = async (
+  userId: string,
+  body: ChangePasswordSchema,
+) => {
+  const user = await prisma.user.findUnique({
+    where: {
+      id: BigInt(userId),
+    },
+  });
+
+  if (!user) {
+    throw new ApiError("User tidak ditemukan", 404);
+  }
+
+  const isPasswordMatch = await argon.verify(
+    user.password,
+    body.currentPassword,
+  );
+
+  if (!isPasswordMatch) {
+    throw new ApiError("Password lama salah", 400);
+  }
+  const isSamePassword = await argon.verify(user.password, body.newPassword);
+
+  if (isSamePassword) {
+    throw new ApiError(
+      "Password baru tidak boleh sama dengan password lama",
+      400,
+    );
+  }
+
+  const hashedPassword = await argon.hash(body.newPassword);
+
+  await prisma.user.update({
+    where: {
+      id: BigInt(userId),
+    },
+    data: {
+      password: hashedPassword,
+    },
+  });
+
+  return {
+    message: "Password berhasil diubah",
+  };
 };

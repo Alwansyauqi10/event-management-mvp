@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/axios";
 import type {
+  ChangePasswordSchema,
   LoginSchema,
   RegisterSchema,
   UpdateProfileSchema,
@@ -77,3 +78,24 @@ export const useUpdateProfile = () => {
   });
 };
 
+export const useChangePassword = () => {
+  return useMutation({
+    mutationFn: async (data: ChangePasswordSchema) => {
+      const response = await api.put("/auth/change-password", {
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+        confirmPassword: data.confirmPassword,
+      });
+
+      return response.data;
+    },
+
+    onSuccess: () => {
+      toast.success("Password berhasil diubah!");
+    },
+
+    onError: (error: AxiosError<{ message: string }>) => {
+      toast.error(error.response?.data?.message || "Gagal mengubah password");
+    },
+  });
+};

@@ -1,56 +1,41 @@
-import {  useUpdateProfile } from "@/hooks/useAuth";
+import { useChangePassword, useUpdateProfile } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
-import {
-  updateProfileSchema,
-  type ChangePasswordSchema,
-  type UpdateProfileSchema,
-} from "@/schema/auth";
-import { zodResolver } from "@hookform/resolvers/zod";
+import type { ChangePasswordSchema, UpdateProfileSchema } from "@/schema/auth";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
+
+import ChangePasswordModal from "@/components/profile/ChangePasswordModal";
+import ConfirmChangePassword from "@/components/profile/ConfirmChangePassword";
+import ConfirmEditProfile from "@/components/profile/ConfirmEditProfile";
+import ConfirmLogout from "@/components/profile/ConfirmLogout";
+import EditProfileForm from "@/components/profile/EditProfileForm";
+import LogoutButton from "@/components/profile/LogoutButton";
 
 function ProfilePage() {
   const navigate = useNavigate();
 
   const { data: user, isLoading, isError } = useProfile();
+
   const [isEditing, setIsEditing] = useState(false);
+
   const [showConfirm, setShowConfirm] = useState(false);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
   const [pendingData, setPendingData] = useState<UpdateProfileSchema | null>(
     null,
   );
-  
 
   const { mutate, isPending } = useUpdateProfile();
- 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<UpdateProfileSchema>({
-    resolver: zodResolver(updateProfileSchema),
-    values: {
-      name: user?.name ?? "",
-      phone: user?.phone ?? "",
-    },
-  });
 
   const handleUpdateProfile = (values: UpdateProfileSchema) => {
     setPendingData(values);
     setShowConfirm(true);
   };
+
   const handleCancelEdit = () => {
     setIsEditing(false);
     setPendingData(null);
   };
-  const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    navigate("/login");
-  };
-  const handleCancelLogout = () => {
-    setShowLogoutConfirm(false);
-  };
+
   const handleConfirmUpdate = () => {
     if (!pendingData) return;
 
@@ -62,9 +47,55 @@ function ProfilePage() {
       },
     });
   };
+
   const handleCancelConfirm = () => {
     setShowConfirm(false);
     setPendingData(null);
+  };
+
+  const [showChangePassword, setShowChangePassword] = useState(false);
+
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
+
+  const [pendingPasswordData, setPendingPasswordData] =
+    useState<ChangePasswordSchema | null>(null);
+
+  const { mutate: changePassword, isPending: isChangingPassword } =
+    useChangePassword();
+
+  const handleChangePassword = (values: ChangePasswordSchema) => {
+    setPendingPasswordData(values);
+    setShowChangePassword(false);
+    setShowPasswordConfirm(true);
+  };
+
+  const handleConfirmChangePassword = () => {
+    if (!pendingPasswordData) return;
+
+    changePassword(pendingPasswordData, {
+      onSuccess: () => {
+        setShowPasswordConfirm(false);
+        setPendingPasswordData(null);
+      },
+    });
+  };
+  const handleCancelChangePassword = () => {
+    setShowChangePassword(false);
+  };
+  const handleCancelPasswordConfirm = () => {
+    setShowPasswordConfirm(false);
+    setPendingPasswordData(null);
+  };
+
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    navigate("/login");
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
   };
 
   if (isLoading) {
@@ -72,12 +103,13 @@ function ProfilePage() {
       <div className="flex min-h-[70vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600" />
+
           <p className="text-sm text-slate-500">Memuat profile...</p>
         </div>
       </div>
     );
   }
-  
+
   if (isError || !user) {
     return (
       <div className="flex min-h-[70vh] items-center justify-center px-4">
@@ -105,71 +137,39 @@ function ProfilePage() {
 
   return (
     <div className="min-h-[80vh] bg-slate-50 px-4 py-10">
-      {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-            <h2 className="text-xl font-bold text-slate-900">
-              Konfirmasi Perubahan
-            </h2>
+      <ChangePasswordModal
+        open={showChangePassword}
+        onSubmit={handleChangePassword}
+        onCancel={handleCancelChangePassword}
+        isPending={isChangingPassword}
+      />
 
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Yakin ingin menyimpan perubahan profile kamu?
-            </p>
+      <ConfirmChangePassword
+        open={showPasswordConfirm}
+        onCancel={handleCancelPasswordConfirm}
+        onConfirm={handleConfirmChangePassword}
+        isPending={isChangingPassword}
+      />
+      <ConfirmEditProfile
+        open={showConfirm}
+        onCancel={handleCancelConfirm}
+        onConfirm={handleConfirmUpdate}
+        isPending={isPending}
+      />
 
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={handleCancelConfirm}
-                disabled={isPending}
-                className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
-              >
-                Batal
-              </button>
+      <ConfirmChangePassword
+        open={showPasswordConfirm}
+        onCancel={handleCancelPasswordConfirm}
+        onConfirm={handleConfirmChangePassword}
+        isPending={isChangingPassword}
+      />
 
-              <button
-                type="button"
-                onClick={handleConfirmUpdate}
-                disabled={isPending}
-                className="rounded-xl bg-blue-600 px-5 py-2.5 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isPending ? "Menyimpan..." : "Ya, Simpan"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {showLogoutConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-            <h2 className="text-xl font-bold text-slate-900">
-              Konfirmasi Logout
-            </h2>
+      <ConfirmLogout
+        open={showLogoutConfirm}
+        onCancel={handleCancelLogout}
+        onConfirm={handleLogout}
+      />
 
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Yakin ingin keluar dari akun kamu?
-            </p>
-
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={handleCancelLogout}
-                className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 font-semibold text-slate-600 transition hover:bg-slate-50"
-              >
-                Batal
-              </button>
-
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="rounded-xl bg-red-600 px-5 py-2.5 font-semibold text-white transition hover:bg-red-700"
-              >
-                Ya, Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       <div className="mx-auto max-w-3xl">
         <div className="mb-6">
           <p className="text-sm font-medium text-blue-600">Account</p>
@@ -210,7 +210,7 @@ function ProfilePage() {
             </div>
           </div>
 
-          <div className="p-6 ">
+          <div className="p-6">
             <div className="mb-5 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-slate-900">
                 Informasi Akun
@@ -227,70 +227,13 @@ function ProfilePage() {
             </div>
 
             {isEditing ? (
-              <form onSubmit={handleSubmit(handleUpdateProfile)}>
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <div>
-                    <label
-                      htmlFor="name"
-                      className="mb-2 block text-sm font-medium text-slate-700"
-                    >
-                      Nama
-                    </label>
-
-                    <input
-                      id="name"
-                      {...register("name")}
-                      className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    />
-
-                    {errors.name && (
-                      <p className="mt-1 text-sm text-red-500">
-                        {errors.name.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="phone"
-                      className="mb-2 block text-sm font-medium text-slate-700"
-                    >
-                      Nomor Telepon
-                    </label>
-
-                    <input
-                      id="phone"
-                      {...register("phone")}
-                      className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    />
-
-                    {errors.phone && (
-                      <p className="mt-1 text-sm text-red-500">
-                        {errors.phone.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-6">
-                  <button
-                    type="button"
-                    onClick={handleCancelEdit}
-                    disabled={isPending}
-                    className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-
-                  <button
-                    type="submit"
-                    disabled={isPending}
-                    className="rounded-xl bg-blue-600 px-5 py-2.5 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isPending ? "Menyimpan..." : "Simpan Perubahan"}
-                  </button>
-                </div>
-              </form>
+              <EditProfileForm
+                name={user.name}
+                phone={user.phone}
+                onSubmit={handleUpdateProfile}
+                onCancel={handleCancelEdit}
+                isPending={isPending}
+              />
             ) : (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-xl bg-slate-50 p-4">
@@ -353,15 +296,29 @@ function ProfilePage() {
                 </div>
               </div>
             )}
-            
-            <div className="mt-6 flex justify-end border-t border-slate-100 pt-6">
-              <button
-                onClick={() => setShowLogoutConfirm(true)}
-                className="rounded-xl border border-red-200 bg-red-50 px-5 py-2.5 font-semibold text-red-600 transition hover:bg-red-100 active:scale-[0.98]"
-              >
-                Logout
-              </button>
+            <div className="mt-8 border-t border-slate-100 pt-6">
+              <h3 className="text-lg font-semibold text-slate-900">Keamanan</h3>
+
+              <div className="mt-4 flex items-center justify-between gap-4 rounded-xl bg-slate-50 p-4">
+                <div>
+                  <p className="font-medium text-slate-900">Password</p>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    Ubah password untuk menjaga keamanan akun.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowChangePassword(true)}
+                  className="shrink-0 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                >
+                  Change Password
+                </button>
+              </div>
             </div>
+
+            <LogoutButton onClick={() => setShowLogoutConfirm(true)} />
           </div>
         </div>
       </div>

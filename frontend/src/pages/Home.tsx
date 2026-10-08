@@ -6,6 +6,7 @@ import {
 } from "../services/event.service";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
+import { useNavigate } from "react-router";
 import {
   Pagination,
   PaginationContent,
@@ -39,6 +40,7 @@ const steps = [
 ];
 
 function Home() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [location, setLocation] = useState("");
@@ -290,7 +292,8 @@ function Home() {
               {events.map((event) => (
                 <article
                   key={event.id}
-                  className="group overflow-hidden rounded-xl border border-haya-border bg-white transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+                  onClick={() => navigate(`/events/${event.id}`)}
+                  className="group cursor-pointer overflow-hidden rounded-xl border border-haya-border bg-white transition duration-300 hover:-translate-y-1 hover:shadow-xl"
                 >
                   <div className="relative overflow-hidden">
                     <img
@@ -306,6 +309,9 @@ function Home() {
                     <button
                       type="button"
                       aria-label={`Save ${event.name}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
                       className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-haya-navy shadow-sm backdrop-blur transition hover:bg-white"
                     >
                       <svg

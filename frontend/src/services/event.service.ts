@@ -69,3 +69,33 @@ export const getEventById = async (
 
   return response.data;
 };
+
+
+
+// tickets
+
+export type Ticket = {
+  id: string;
+  eventId: string;
+  name: string;
+  price: string;
+  quantity: number;
+  availableQuantity: number;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+export type EventTicketsResponse = {
+  data: Ticket[];
+};
+
+export const getEventTickets = async (
+  eventId: string,
+): Promise<EventTicketsResponse> => {
+  const response = await api.get<EventTicketsResponse>(
+    `/events/${eventId}/tickets`,
+  );
+
+  return response.data;
+};

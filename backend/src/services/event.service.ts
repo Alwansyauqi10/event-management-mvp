@@ -87,3 +87,17 @@ export const getEventByIdService = async (id: bigint) => {
 
   return event;
 };
+
+export const getEventTicketsService = async (eventId: bigint) => {
+  const tickets = await prisma.ticket.findMany({
+    where: {
+      eventId,
+      deletedAt: null,
+    },
+    orderBy: {
+      price: "asc",
+    },
+  });
+
+  return tickets;
+};

@@ -36,6 +36,10 @@ export type EventsResponse = {
   };
 };
 
+export type EventDetailResponse = {
+  data: Event;
+};
+
 export type LocationsResponse = {
   data: string[];
 };
@@ -52,6 +56,46 @@ export const getEvents = async (
 
 export const getEventLocations = async (): Promise<LocationsResponse> => {
   const response = await api.get<LocationsResponse>("/events/locations");
+
+  return response.data;
+};
+
+export const getEventById = async (
+  id: string,
+): Promise<EventDetailResponse> => {
+  const response = await api.get<EventDetailResponse>(
+    `/events/${id}`,
+  );
+
+  return response.data;
+};
+
+
+
+// tickets
+
+export type Ticket = {
+  id: string;
+  eventId: string;
+  name: string;
+  price: string;
+  quantity: number;
+  availableQuantity: number;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+export type EventTicketsResponse = {
+  data: Ticket[];
+};
+
+export const getEventTickets = async (
+  eventId: string,
+): Promise<EventTicketsResponse> => {
+  const response = await api.get<EventTicketsResponse>(
+    `/events/${eventId}/tickets`,
+  );
 
   return response.data;
 };

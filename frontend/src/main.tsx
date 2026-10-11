@@ -12,6 +12,7 @@ import RegisterPage from "./pages/RegisterPage";
 import { Toaster } from "sonner";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import EventDetailPage from "./pages/EventDetail";
 
 const queryClient = new QueryClient();
 
@@ -32,7 +33,10 @@ const router = createBrowserRouter([
         path: "/",
         element: <Home />,
       },
-
+      {
+        path: "/events/:id",
+        element: <EventDetailPage />,
+      },
       {
         element: <ProtectedRoute />,
         children: [

@@ -31,31 +31,22 @@ function Footer() {
             >
               Events
             </a>
-
             <a
               href="/categories"
               className="transition hover:text-white"
             >
               Categories
             </a>
-
             <a
               href="/about"
               className="transition hover:text-white"
             >
               About
             </a>
-
-            <a
-              href="mailto:hello@hayaevents.com"
-              className="transition hover:text-white"
-            >
-              Contact
-            </a>
           </nav>
 
           {/* Social Media */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <a
               href="#"
               aria-label="Instagram"

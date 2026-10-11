@@ -12,6 +12,7 @@ import {
 } from "../validator/auth.validator.js";
 import { mailer } from "../lib/mailer.js";
 import { createHash, randomBytes } from "node:crypto";
+import { cloudinary } from "../lib/cloudinary.js";
 
 export const registerService = async (body: RegisterSchema) => {
   //1. cek email udah kepake atau belum
@@ -350,5 +351,59 @@ export const resetPasswordService = async ({
 
   return {
     message: "Password berhasil diubah. Silakan login kembali.",
+  };
+};
+
+export const updateProfilePictureService = async (
+  userId: string,
+  file: Express.Multer.File,
+) => {
+  // Upload buffer gambar ke Cloudinary.
+  const imageUrl = await new Promise<string>((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: "event-management/profiles",
+        resource_type: "image",
+        transformation: [{ width: 500, height: 500, crop: "limit" }],
+      },
+      (error, result) => {
+        if (error) {
+          return reject(new ApiError("Gagal mengunggah foto profile", 502));
+        }
+
+        if (!result) {
+          return reject(
+            new ApiError("Cloudinary tidak mengembalikan hasil upload", 502),
+          );
+        }
+
+        resolve(result.secure_url);
+      },
+    );
+
+    uploadStream.end(file.buffer);
+  });
+
+  // Simpan URL foto ke database pengguna.
+  const user = await prisma.user.update({
+    where: {
+      id: BigInt(userId),
+    },
+    data: {
+      profilePicture: imageUrl,
+    },
+    select: {
+      id: true,
+      name: true,
+      profilePicture: true,
+    },
+  });
+
+  return {
+    message: "Foto profile berhasil diperbarui",
+    user: {
+      ...user,
+      id: user.id.toString(),
+    },
   };
 };

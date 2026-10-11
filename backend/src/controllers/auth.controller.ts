@@ -6,8 +6,10 @@ import {
   profileService,
   registerService,
   resetPasswordService,
+  updateProfilePictureService,
   updateProfileService,
 } from "../services/auth.service.js";
+import { ApiError } from "../utils/api-error.js";
 
 export const registerController = async (req: Request, res: Response) => {
   const result = await registerService(req.body);
@@ -65,4 +67,16 @@ export const resetPasswordController = async (req: Request, res: Response) => {
     newPassword: req.body.newPassword,
   });
   res.status(200).send(result);
+};
+
+export const updateProfilePictureController = async (
+  req: Request,
+  res: Response,
+) => {
+  const userId = res.locals.user.id;
+  if (!req.file) {
+    throw new ApiError("Foto profile wajib diunggah", 400);
+  }
+  const result = await updateProfilePictureService(userId, req.file);
+  res.status(200).json(result);
 };

@@ -7,6 +7,7 @@ import {
   registerController,
   resetPasswordController,
   updateProfileController,
+  updateProfilePictureController,
 } from "../controllers/auth.controller.js";
 import { verifyToken } from "../middleware/auth.middleware.js";
 import { checkRole } from "../middleware/role.middleware.js";
@@ -19,6 +20,7 @@ import {
   resetPasswordSchema,
   updateProfileSchema,
 } from "../validator/auth.validator.js";
+import { uploadProfilePicture } from "../middleware/upload.middleware.js";
 const authRoutes = express.Router();
 
 authRoutes.post("/register", validate(registerSchema), registerController);
@@ -63,5 +65,10 @@ authRoutes.post(
   validate(resetPasswordSchema),
   resetPasswordController,
 );
-
+authRoutes.put(
+  "/profile-picture",
+  verifyToken(process.env.JWT_SECRET!),
+  uploadProfilePicture,
+  updateProfilePictureController,
+);
 export { authRoutes };

@@ -1,9 +1,11 @@
 import { Request, Response } from "express";
 import {
   changePasswordService,
+  forgotPasswordService,
   loginService,
   profileService,
   registerService,
+  resetPasswordService,
   updateProfileService,
 } from "../services/auth.service.js";
 
@@ -50,4 +52,17 @@ export const changePasswordController = async (req: Request, res: Response) => {
   const result = await changePasswordService(userId, req.body);
 
   res.status(200).json(result);
+};
+
+export const forgotPasswordController = async (req: Request, res: Response) => {
+  const result = await forgotPasswordService(req.body);
+
+  res.status(200).json(result);
+};
+export const resetPasswordController = async (req: Request, res: Response) => {
+  const result = await resetPasswordService({
+    token: req.body.token,
+    newPassword: req.body.newPassword,
+  });
+  res.status(200).send(result);
 };

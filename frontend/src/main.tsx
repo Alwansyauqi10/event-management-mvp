@@ -10,6 +10,8 @@ import ProfilePage from "./pages/ProfilePage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RegisterPage from "./pages/RegisterPage";
 import { Toaster } from "sonner";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +24,7 @@ const router = createBrowserRouter([
     path: "/register",
     element: <RegisterPage />,
   },
+
   {
     element: <MainLayout />,
     children: [
@@ -40,6 +43,14 @@ const router = createBrowserRouter([
         ],
       },
     ],
+  },
+  {
+    path: "/forgot-password",
+    element: <ForgotPasswordPage />,
+  },
+  {
+    path: "/reset-password",
+    element: <ResetPasswordPage />,
   },
 ]);
 

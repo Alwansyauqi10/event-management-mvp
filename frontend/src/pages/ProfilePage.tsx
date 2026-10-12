@@ -10,6 +10,7 @@ import ConfirmEditProfile from "@/components/profile/ConfirmEditProfile";
 import ConfirmLogout from "@/components/profile/ConfirmLogout";
 import EditProfileForm from "@/components/profile/EditProfileForm";
 import LogoutButton from "@/components/profile/LogoutButton";
+import { usePoints } from "@/hooks/usePoint";
 
 function ProfilePage() {
   const navigate = useNavigate();
@@ -27,6 +28,11 @@ function ProfilePage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const {
+    data: points,
+    isLoading: isPointsLoading,
+    isError: isPointsError,
+  } = usePoints();
 
   const { mutate: uploadProfilePicture, isPending: isUploading } =
     useUploadProfilePicture();
@@ -195,13 +201,6 @@ function ProfilePage() {
         isPending={isPending}
       />
 
-      <ConfirmChangePassword
-        open={showPasswordConfirm}
-        onCancel={handleCancelPasswordConfirm}
-        onConfirm={handleConfirmChangePassword}
-        isPending={isChangingPassword}
-      />
-
       <ConfirmLogout
         open={showLogoutConfirm}
         onCancel={handleCancelLogout}
@@ -359,6 +358,20 @@ function ProfilePage() {
                   <p className="mt-1 font-medium capitalize text-slate-900">
                     {user.role}
                   </p>
+                </div>
+
+                <div className="rounded-xl border p-4">
+                  <p className="text-sm text-gray-500">Saldo Poin</p>
+
+                  {isPointsLoading ? (
+                    <p>Memuat saldo poin...</p>
+                  ) : isPointsError ? (
+                    <p>Saldo poin gagal dimuat.</p>
+                  ) : (
+                    <p className="text-2xl font-bold">
+                      {Number(points ?? "0").toLocaleString("id-ID")} poin
+                    </p>
+                  )}
                 </div>
 
                 <div className="rounded-xl bg-slate-50 p-4 sm:col-span-2">

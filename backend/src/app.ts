@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import eventRoutes from "./routes/event.routes.js";
 import { authRoutes } from "./routes/auth.routes.js";
 import { globalError, notFoundError } from "./utils/error.js";
+import { referralRoutes } from "./routes/referral.routes.js";
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ app.use(express.json());
 
 app.use("/events", eventRoutes);
 app.use("/auth", authRoutes);
+app.use("/referral", referralRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: "Event Management API is running" });

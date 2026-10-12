@@ -4,10 +4,15 @@ import { prisma } from "../lib/prisma.js";
 import { ApiError } from "../utils/api-error.js";
 import {
   ChangePasswordSchema,
+  ForgotPasswordSchema,
   LoginSchema,
   RegisterSchema,
+  ResetPasswordSchema,
   UpdateProfileSchema,
 } from "../validator/auth.validator.js";
+import { mailer } from "../lib/mailer.js";
+import { createHash, randomBytes } from "node:crypto";
+import { cloudinary } from "../lib/cloudinary.js";
 
 export const registerService = async (body: RegisterSchema) => {
   //1. cek email udah kepake atau belum
@@ -90,6 +95,9 @@ export const profileService = async (userId: string) => {
       referralCode: true,
     },
   });
+  if (!user) {
+    throw new ApiError("User tidak ditemukan", 404);
+  }
   return user;
 };
 export const updateProfileService = async (
@@ -162,5 +170,240 @@ export const changePasswordService = async (
 
   return {
     message: "Password berhasil diubah",
+  };
+};
+
+export const forgotPasswordService = async (body: ForgotPasswordSchema) => {
+  if (!body || !body.email) {
+    throw new Error("Email tidak ditemukan di dalam request body");
+  }
+  const genericMessage =
+    "Jika email terdaftar, instruksi reset password akan dikirim.";
+
+  const user = await prisma.user.findUnique({
+    where: { email: body.email },
+    select: {
+      id: true,
+      email: true,
+    },
+  });
+
+  // Jangan mengungkap apakah email terdaftar.
+  if (!user) {
+    return { message: genericMessage };
+  }
+
+  // Token acak untuk dikirim melalui email.
+  const resetToken = randomBytes(32).toString("hex");
+
+  // Simpan hash token, bukan token aslinya.
+  const hashedToken = createHash("sha256").update(resetToken).digest("hex");
+
+  const expiredAt = new Date(Date.now() + 15 * 60 * 1000);
+
+  // Tandai token reset sebelumnya sebagai sudah digunakan.
+  await prisma.passwordResetToken.updateMany({
+    where: {
+      userId: user.id,
+      usedAt: null,
+    },
+    data: {
+      usedAt: new Date(),
+    },
+  });
+
+  await prisma.passwordResetToken.create({
+    data: {
+      userId: user.id,
+      token: hashedToken,
+      expiredAt,
+    },
+  });
+
+  const frontendUrl = process.env.FRONTEND_URL;
+
+  if (!frontendUrl) {
+    throw new Error("FRONTEND_URL belum dikonfigurasi");
+  }
+
+  const resetUrl = new URL("/reset-password", frontendUrl);
+  resetUrl.searchParams.set("token", resetToken);
+
+  await mailer.sendMail({
+    from: process.env.SMTP_USER,
+    to: user.email,
+    subject: "Reset Password",
+    text: `Untuk mengatur ulang password, buka tautan berikut: ${resetUrl.toString()}. Tautan berlaku selama 15 menit.`,
+    html: `
+      <h2>Reset Password</h2>
+      <p>Kami menerima permintaan untuk mengatur ulang password akunmu.</p>
+      <p>
+        <a href="${resetUrl.toString()}">Reset Password</a>
+      </p>
+      <p>Tautan berlaku selama 15 menit.</p>
+      <p>Jika kamu tidak meminta reset password, abaikan email ini.</p>
+    `,
+  });
+
+  return { message: genericMessage };
+};
+
+type ResetPasswordInput = Pick<ResetPasswordSchema, "token" | "newPassword">;
+export const resetPasswordService = async ({
+  token,
+  newPassword,
+}: ResetPasswordInput) => {
+  // Hash token dari URL agar cocok dengan token di database.
+  const hashedToken = createHash("sha256").update(token).digest("hex");
+
+  const resetToken = await prisma.passwordResetToken.findUnique({
+    where: {
+      token: hashedToken,
+    },
+    select: {
+      id: true,
+      userId: true,
+      expiredAt: true,
+      usedAt: true,
+    },
+  });
+
+  // Token tidak ditemukan.
+  if (!resetToken) {
+    throw new ApiError("Token reset password tidak valid", 400);
+  }
+
+  // Token sudah pernah digunakan.
+  if (resetToken.usedAt !== null) {
+    throw new ApiError("Token reset password sudah digunakan", 400);
+  }
+
+  // Token sudah kedaluwarsa.
+  if (resetToken.expiredAt <= new Date()) {
+    throw new ApiError("Token reset password sudah kedaluwarsa", 400);
+  }
+
+  // Ambil password lama yang tersimpan di database.
+  const user = await prisma.user.findUnique({
+    where: {
+      id: resetToken.userId,
+    },
+    select: {
+      password: true,
+    },
+  });
+
+  if (!user) {
+    throw new ApiError("User tidak ditemukan", 404);
+  }
+
+  // Pastikan password baru tidak sama dengan password lama.
+  const isSamePassword = await argon.verify(user.password, newPassword);
+
+  if (isSamePassword) {
+    throw new ApiError(
+      "Password baru tidak boleh sama dengan password lama",
+      400,
+    );
+  }
+
+  // Lanjutkan proses yang sudah ada:
+  // hash password baru, update password,
+  // dan tandai token reset sebagai terpakai.
+
+  // Hash password baru.
+  const hashedPassword = await argon.hash(newPassword);
+
+  // Update password dan klaim token dalam satu transaksi.
+  await prisma.$transaction(async (tx) => {
+    // Pastikan token belum digunakan dan belum kedaluwarsa.
+    const claimedToken = await tx.passwordResetToken.updateMany({
+      where: {
+        id: resetToken.id,
+        usedAt: null,
+        expiredAt: {
+          gt: new Date(),
+        },
+      },
+      data: {
+        usedAt: new Date(),
+      },
+    });
+
+    // Jika token sudah diklaim request lain, batalkan transaksi.
+    if (claimedToken.count !== 1) {
+      throw new ApiError(
+        "Token reset password sudah digunakan atau kedaluwarsa",
+        400,
+      );
+    }
+
+    // Update password hanya jika token berhasil diklaim.
+    await tx.user.update({
+      where: {
+        id: resetToken.userId,
+      },
+      data: {
+        password: hashedPassword,
+      },
+    });
+  });
+
+  return {
+    message: "Password berhasil diubah. Silakan login kembali.",
+  };
+};
+
+export const updateProfilePictureService = async (
+  userId: string,
+  file: Express.Multer.File,
+) => {
+  // Upload buffer gambar ke Cloudinary.
+  const imageUrl = await new Promise<string>((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: "event-management/profiles",
+        resource_type: "image",
+        transformation: [{ width: 500, height: 500, crop: "limit" }],
+      },
+      (error, result) => {
+        if (error) {
+          return reject(new ApiError("Gagal mengunggah foto profile", 502));
+        }
+
+        if (!result) {
+          return reject(
+            new ApiError("Cloudinary tidak mengembalikan hasil upload", 502),
+          );
+        }
+
+        resolve(result.secure_url);
+      },
+    );
+
+    uploadStream.end(file.buffer);
+  });
+
+  // Simpan URL foto ke database pengguna.
+  const user = await prisma.user.update({
+    where: {
+      id: BigInt(userId),
+    },
+    data: {
+      profilePicture: imageUrl,
+    },
+    select: {
+      id: true,
+      name: true,
+      profilePicture: true,
+    },
+  });
+
+  return {
+    message: "Foto profile berhasil diperbarui",
+    user: {
+      ...user,
+      id: user.id.toString(),
+    },
   };
 };

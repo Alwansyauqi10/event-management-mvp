@@ -2,7 +2,7 @@ import { useChangePassword, useUpdateProfile } from "@/hooks/useAuth";
 import { useProfile, useUploadProfilePicture } from "@/hooks/useProfile";
 import type { ChangePasswordSchema, UpdateProfileSchema } from "@/schema/auth";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 
 import ChangePasswordModal from "@/components/profile/ChangePasswordModal";
 import ConfirmChangePassword from "@/components/profile/ConfirmChangePassword";
@@ -11,6 +11,7 @@ import ConfirmLogout from "@/components/profile/ConfirmLogout";
 import EditProfileForm from "@/components/profile/EditProfileForm";
 import LogoutButton from "@/components/profile/LogoutButton";
 import { usePoints } from "@/hooks/usePoint";
+import { usePointHistory } from "@/hooks/usePointHistory";
 
 function ProfilePage() {
   const navigate = useNavigate();
@@ -33,6 +34,11 @@ function ProfilePage() {
     isLoading: isPointsLoading,
     isError: isPointsError,
   } = usePoints();
+  const {
+    data: pointHistory,
+    isLoading: isHistoryLoading,
+    isError: isHistoryError,
+  } = usePointHistory();
 
   const { mutate: uploadProfilePicture, isPending: isUploading } =
     useUploadProfilePicture();
@@ -373,6 +379,63 @@ function ProfilePage() {
                     </p>
                   )}
                 </div>
+
+                <section className="rounded-xl border p-4 sm:col-span-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h2 className="text-lg font-semibold text-slate-900">
+                        Riwayat Poin
+                      </h2>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Transaksi poin terbaru
+                      </p>
+                    </div>
+
+                    <Link
+                      to="/profile/points"
+                      className="shrink-0 text-sm font-semibold text-blue-600 hover:text-blue-700"
+                    >
+                      Lihat Semua →
+                    </Link>
+                  </div>
+                  {isHistoryLoading ? (
+                    <p className="mt-4 text-sm text-slate-500">
+                      Memuat riwayat poin...
+                    </p>
+                  ) : isHistoryError ? (
+                    <p className="mt-4 text-sm text-red-500">
+                      Riwayat poin gagal dimuat.
+                    </p>
+                  ) : !pointHistory?.length ? (
+                    <p className="mt-4 text-sm text-slate-500">
+                      Belum ada riwayat poin.
+                    </p>
+                  ) : (
+                    <div className="mt-3 divide-y divide-slate-100">
+                      {pointHistory.slice(0, 3).map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between gap-3 py-3"
+                        >
+                          <div className="min-w-0">
+                            <p className="font-medium text-slate-900">
+                              {item.type}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              {new Date(item.createdAt).toLocaleDateString(
+                                "id-ID",
+                              )}
+                            </p>
+                          </div>
+
+                          <p className="shrink-0 text-sm font-semibold text-slate-900">
+                            {Number(item.amount).toLocaleString("id-ID")} poin
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
 
                 <div className="rounded-xl bg-slate-50 p-4 sm:col-span-2">
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-400">

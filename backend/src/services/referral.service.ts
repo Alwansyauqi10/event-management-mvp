@@ -26,3 +26,31 @@ export const pointService = async (userId: string) => {
     message: "Saldo poin berhasil diakses",
   };
 };
+
+export const pointHistoryService = async (userId: string) => {
+  const pointTransactions = await prisma.pointTransaction.findMany({
+    where: {
+      userId: BigInt(userId),
+    },
+    select: {
+      id: true,
+      type: true,
+      amount: true,
+      remainingAmount: true,
+      createdAt: true,
+      expiredAt: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return pointTransactions.map((transaction) => ({
+    id: transaction.id.toString(),
+    type: transaction.type,
+    amount: transaction.amount.toString(),
+    remainingAmount: transaction.remainingAmount.toString(),
+    createdAt: transaction.createdAt,
+    expiredAt: transaction.expiredAt,
+  }));
+};

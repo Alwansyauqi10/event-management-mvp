@@ -14,6 +14,7 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import EventDetailPage from "./pages/EventDetail";
 import NotFoundPage from "./pages/NotFoundPage";
+import PointHistoryPage from "./pages/PointHistoryPage";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,10 @@ const router = createBrowserRouter([
           {
             path: "/profile",
             element: <ProfilePage />,
+          },
+          {
+            path: "/profile/points",
+            element: <PointHistoryPage />,
           },
         ],
       },

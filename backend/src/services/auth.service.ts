@@ -45,16 +45,6 @@ export const registerService = async (body: RegisterSchema) => {
       if (!referrer || referrer.deletedAt) {
         throw new ApiError("Referral code tidak valid", 400);
       }
-      // Cek apakah referral code pemilik ini sudah pernah digunakan
-      const referralUsed = await tx.referralUser.findFirst({
-        where: {
-          referrerId: referrer.id,
-        },
-      });
-
-      if (referralUsed) {
-        throw new ApiError("Referral code sudah digunakan", 400);
-      }
     }
 
     // 3. Hash password

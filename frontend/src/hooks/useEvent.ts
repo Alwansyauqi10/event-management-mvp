@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-
 import { getEventById } from "../services/event.service";
 
 export const useEventById = (id: string) => {
@@ -9,3 +8,4 @@ export const useEventById = (id: string) => {
     enabled: Boolean(id),
   });
 };
+

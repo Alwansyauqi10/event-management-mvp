@@ -1,7 +1,7 @@
 import { useChangePassword, useUpdateProfile } from "@/hooks/useAuth";
-import { useProfile } from "@/hooks/useProfile";
+import { useProfile, useUploadProfilePicture } from "@/hooks/useProfile";
 import type { ChangePasswordSchema, UpdateProfileSchema } from "@/schema/auth";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 
 import ChangePasswordModal from "@/components/profile/ChangePasswordModal";
@@ -23,6 +23,44 @@ function ProfilePage() {
   const [pendingData, setPendingData] = useState<UpdateProfileSchema | null>(
     null,
   );
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { mutate: uploadProfilePicture, isPending: isUploading } =
+    useUploadProfilePicture();
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+  };
+  const handleUploadProfilePicture = () => {
+    if (!selectedFile) return;
+
+    uploadProfilePicture(selectedFile, {
+      onSuccess: () => {
+        setSelectedFile(null);
+        setPreviewUrl(null);
+
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      },
+    });
+  };
 
   const { mutate, isPending } = useUpdateProfile();
 
@@ -186,26 +224,75 @@ function ProfilePage() {
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-200/50">
           <div className="bg-linear-to-r from-blue-600 to-indigo-600 px-6 py-8">
             <div className="flex items-center gap-4">
-              {user.profilePicture ? (
-                <img
-                  src={user.profilePicture}
-                  alt={user.name}
-                  className="h-20 w-20 rounded-full border-4 border-white/30 object-cover"
+              <div className="relative shrink-0">
+                {previewUrl || user.profilePicture ? (
+                  <img
+                    src={previewUrl ?? user.profilePicture ?? ""}
+                    alt={user.name}
+                    className="h-20 w-20 rounded-full border-4 border-white/30 object-cover"
+                  />
+                ) : (
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-white/30 bg-white text-2xl font-bold text-blue-600">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleFileChange}
                 />
-              ) : (
-                <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-white/30 bg-white text-2xl font-bold text-blue-600">
-                  {user.name.charAt(0).toUpperCase()}
-                </div>
-              )}
+              </div>
 
               <div className="text-white">
                 <h2 className="text-2xl font-bold">{user.name}</h2>
-
                 <p className="mt-1 text-sm text-blue-100">{user.email}</p>
 
                 <span className="mt-2 inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-medium">
                   {user.role}
                 </span>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="rounded-lg bg-white px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+                  >
+                    Ganti Foto
+                  </button>
+
+                  {selectedFile && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleUploadProfilePicture}
+                        disabled={isUploading}
+                        className="rounded-lg bg-blue-700 px-3 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:opacity-50"
+                      >
+                        {isUploading ? "Mengunggah..." : "Upload"}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedFile(null);
+                          setPreviewUrl(null);
+
+                          if (fileInputRef.current) {
+                            fileInputRef.current.value = "";
+                          }
+                        }}
+                        disabled={isUploading}
+                        className="rounded-lg bg-white/20 px-3 py-2 text-sm font-medium text-white hover:bg-white/30 disabled:opacity-50"
+                      >
+                        Batal
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>

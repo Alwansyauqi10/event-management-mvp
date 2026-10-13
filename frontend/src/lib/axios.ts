@@ -3,6 +3,7 @@ import axios from "axios";
 export const api = axios.create({
   baseURL: "http://localhost:8000",
 });
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("accessToken");
 
@@ -12,15 +13,27 @@ api.interceptors.request.use((config) => {
 
   return config;
 });
+
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   (error) => {
-    const isLoginRequest = error.config?.url === "/auth/login";
-    if (error.response?.status === 401 && !isLoginRequest) {
+    const requestPath = error.config?.url?.split("?")[0];
+
+    const publicAuthPaths = [
+      "/auth/register",
+      "/auth/login",
+      "/auth/forgot-password",
+      "/auth/reset-password",
+    ];
+
+    const isPublicAuthRequest = publicAuthPaths.includes(requestPath ?? "");
+
+    if (error.response?.status === 401 && !isPublicAuthRequest) {
       localStorage.removeItem("accessToken");
-      window.location.href = "/login";
+
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
     }
 
     return Promise.reject(error);

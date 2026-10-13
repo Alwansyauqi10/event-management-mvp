@@ -47,3 +47,40 @@ export const useUpdateProfile = () => {
     },
   });
 };
+
+export const useUploadProfilePicture = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error("Format foto harus JPG, PNG, atau WEBP");
+      }
+
+      if (file.size > 2 * 1024 * 1024) {
+        throw new Error("Ukuran foto maksimal 2 MB");
+      }
+
+      const formData = new FormData();
+      formData.append("profilePicture", file);
+
+      const response = await api.put("/auth/profile-picture", formData);
+
+      return response.data;
+    },
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast.success("Foto profil berhasil diperbarui!");
+    },
+
+    onError: (error: AxiosError<{ message: string }> | Error) => {
+      const message =
+        "response" in error ? error.response?.data?.message : error.message;
+
+      toast.error(message || "Gagal mengunggah foto profil");
+    },
+  });
+};

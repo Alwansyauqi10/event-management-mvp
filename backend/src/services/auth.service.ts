@@ -16,9 +16,6 @@ import { cloudinary } from "../lib/cloudinary.js";
 
 import { randomUUID } from "node:crypto";
 
-// Import prisma, ApiError, argon, dan RegisterSchema
-// tetap gunakan import yang sudah ada di proyekmu.
-
 export const registerService = async (body: RegisterSchema) => {
   const now = new Date();
   const expiredAt = new Date(now);

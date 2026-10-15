@@ -1,3 +1,4 @@
+import { TransactionStatus } from "../generated/prisma/enums.js";
 import { prisma } from "../lib/prisma.js";
 
 export const organizerDashboardService = async (userId: string) => {
@@ -87,5 +88,124 @@ export const organizerDashboardService = async (userId: string) => {
       totalTransactions: event._count.eventTransactions,
       _count: undefined,
     })),
+  };
+};
+
+type GetOrganizerTransactionsParams = {
+  userId: string;
+  status?: TransactionStatus;
+  page: number;
+  limit: number;
+};
+
+export const getOrganizerTransactionsService = async ({
+  userId,
+  status,
+  page,
+  limit,
+}: GetOrganizerTransactionsParams) => {
+  const organizerId = BigInt(userId);
+
+  const where = {
+    event: {
+      organizerId,
+      deletedAt: null,
+    },
+    ...(status ? { status } : {}),
+  };
+
+  const [transactions, total] = await Promise.all([
+    prisma.eventTransaction.findMany({
+      where,
+      orderBy: {
+        createdAt: "desc",
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+      select: {
+        id: true,
+        transactionCode: true,
+        status: true,
+        subTotal: true,
+        pointDiscount: true,
+        voucherDiscount: true,
+        couponDiscount: true,
+        totalAmount: true,
+        createdAt: true,
+        paymentProofDeadline: true,
+        adminConfirmationDeadline: true,
+
+        user: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+
+        event: {
+          select: {
+            id: true,
+            name: true,
+            startDate: true,
+          },
+        },
+
+        items: {
+          select: {
+            ticketId: true,
+            price: true,
+            quantity: true,
+            subTotal: true,
+            ticket: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+
+        paymentProof: {
+          select: {
+            fileUrl: true,
+            uploadedAt: true,
+          },
+        },
+      },
+    }),
+
+    prisma.eventTransaction.count({
+      where,
+    }),
+  ]);
+
+  return {
+    transactions: transactions.map((transaction) => ({
+      ...transaction,
+      id: transaction.id.toString(),
+      subTotal: transaction.subTotal.toString(),
+      pointDiscount: transaction.pointDiscount.toString(),
+      voucherDiscount: transaction.voucherDiscount.toString(),
+      couponDiscount: transaction.couponDiscount.toString(),
+      totalAmount: transaction.totalAmount.toString(),
+
+      event: {
+        ...transaction.event,
+        id: transaction.event.id.toString(),
+      },
+
+      items: transaction.items.map((item) => ({
+        ...item,
+        ticketId: item.ticketId.toString(),
+        price: item.price.toString(),
+        subTotal: item.subTotal.toString(),
+      })),
+    })),
+
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
   };
 };

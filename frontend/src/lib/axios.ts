@@ -49,3 +49,77 @@ export const getOrganizerDashboard =
 
     return response.data;
   };
+
+export type TransactionStatus =
+  | "WAITING_FOR_PAYMENT"
+  | "WAITING_FOR_ADMIN_CONFIRMATION"
+  | "DONE"
+  | "REJECTED"
+  | "EXPIRED"
+  | "CANCELED";
+
+export type OrganizerTransaction = {
+  id: string;
+  transactionCode: string;
+  status: TransactionStatus;
+  subTotal: string;
+  pointDiscount: string;
+  voucherDiscount: string;
+  couponDiscount: string;
+  totalAmount: string;
+  createdAt: string;
+  paymentProofDeadline: string | null;
+  adminConfirmationDeadline: string | null;
+  user: {
+    name: string;
+    email: string;
+  };
+  event: {
+    id: string;
+    name: string;
+    startDate: string;
+  };
+  items: {
+    ticketId: string;
+    price: string;
+    quantity: number;
+    subTotal: string;
+    ticket: {
+      name: string;
+    };
+  }[];
+  paymentProof: {
+    fileUrl: string;
+    uploadedAt: string;
+  } | null;
+};
+
+export type OrganizerTransactionResponse = {
+  message: string;
+  data: {
+    transactions: OrganizerTransaction[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+};
+
+type GetOrganizerTransactionsParams = {
+  page: number;
+  limit: number;
+  status?: TransactionStatus;
+};
+
+export const getOrganizerTransactions = async (
+  params: GetOrganizerTransactionsParams,
+): Promise<OrganizerTransactionResponse> => {
+  const response = await api.get<OrganizerTransactionResponse>(
+    "/organizer/transactions",
+    { params },
+  );
+
+  return response.data;
+};

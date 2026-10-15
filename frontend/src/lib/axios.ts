@@ -1,3 +1,4 @@
+import type { OrganizerDashboardResponse } from "@/types/organizerDashboard";
 import axios from "axios";
 
 export const api = axios.create({
@@ -39,3 +40,12 @@ api.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
+export const getOrganizerDashboard =
+  async (): Promise<OrganizerDashboardResponse> => {
+    const response = await api.get<OrganizerDashboardResponse>(
+      "/organizer/dashboard",
+    );
+
+    return response.data;
+  };

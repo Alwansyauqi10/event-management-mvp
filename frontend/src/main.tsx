@@ -15,6 +15,8 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import EventDetailPage from "./pages/EventDetail";
 import NotFoundPage from "./pages/NotFoundPage";
 import PointHistoryPage from "./pages/PointHistoryPage";
+import OrganizerDashboardPage from "./pages/OrganizerDashboardPage";
+import RoleProtectedRoute from "./components/RoleProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +51,15 @@ const router = createBrowserRouter([
           {
             path: "/profile/points",
             element: <PointHistoryPage />,
+          },
+        ],
+      },
+      {
+        element: <RoleProtectedRoute allowedRole="ORGANIZER" />,
+        children: [
+          {
+            path: "/organizer/dashboard",
+            element: <OrganizerDashboardPage />,
           },
         ],
       },

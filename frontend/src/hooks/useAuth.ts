@@ -26,6 +26,7 @@ export const useRegister = () => {
     },
     onSuccess: () => {
       toast.success("Register success!");
+
       navigate("/login");
     },
     onError: (error: AxiosError<{ message: string }>) => {

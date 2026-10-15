@@ -19,6 +19,9 @@ export const useRegister = () => {
         email: data.email,
         phone: data.phone,
         password: data.password,
+        ...(data.referralCode?.trim()
+          ? { referralCode: data.referralCode.trim() }
+          : {}),
       });
     },
     onSuccess: () => {

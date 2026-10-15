@@ -61,7 +61,6 @@ authRoutes.post(
 );
 authRoutes.post(
   "/reset-password",
-
   validate(resetPasswordSchema),
   resetPasswordController,
 );

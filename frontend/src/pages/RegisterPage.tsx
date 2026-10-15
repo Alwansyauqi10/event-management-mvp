@@ -111,6 +111,33 @@ function RegisterPage() {
               )}{" "}
             </div>{" "}
             <div>
+              <label
+                htmlFor="referralCode"
+                className="mb-2 block text-sm font-medium text-slate-700"
+              >
+                Referral Code (Opsional)
+              </label>
+
+              <input
+                id="referralCode"
+                type="text"
+                placeholder="Masukkan referral code teman"
+                autoComplete="off"
+                {...register("referralCode")}
+                className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+              />
+
+              <p className="mt-1 text-xs text-slate-500">
+                Gunakan kode referral teman untuk mendapatkan kupon diskon 10%.
+              </p>
+
+              {errors.referralCode && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.referralCode.message}
+                </p>
+              )}
+            </div>
+            <div>
               {" "}
               <label
                 htmlFor="password"

@@ -13,6 +13,7 @@ export const registerSchema = z.object({
       message: "Must containt at least code one special character",
     }),
   phone: z.string().min(1, "Phone wajib diisi"),
+  referralCode: z.string().trim().optional(),
 });
 
 export const loginSchema = z.object({

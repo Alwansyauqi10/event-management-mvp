@@ -14,33 +14,90 @@ import { mailer } from "../lib/mailer.js";
 import { createHash, randomBytes } from "node:crypto";
 import { cloudinary } from "../lib/cloudinary.js";
 
+import { randomUUID } from "node:crypto";
+
 export const registerService = async (body: RegisterSchema) => {
-  //1. cek email udah kepake atau belum
-  const user = await prisma.user.findUnique({
-    where: { email: body.email },
-  });
-  //2.kalo udah kepake throw error
-  if (user) {
-    throw new ApiError("Email sudah terdaftar", 400);
-  }
-  //3.kalo belum hash passwordnya
-  const hashedPassword = await argon.hash(body.password);
+  const now = new Date();
+  const expiredAt = new Date(now);
+  expiredAt.setMonth(expiredAt.getMonth() + 3);
 
-  // 4. Buat referral code
-  const referralCode = `REF-${Date.now()}`;
-  //5. create data usernya
-  await prisma.user.create({
-    data: {
-      name: body.name,
-      email: body.email,
-      password: hashedPassword,
-      phone: body.phone,
-      referralCode,
-    },
-  });
+  return prisma.$transaction(async (tx) => {
+    // 1. Cek email
+    const existingUser = await tx.user.findUnique({
+      where: { email: body.email },
+    });
 
-  //6. return success
-  return { message: "register success!" };
+    if (existingUser) {
+      throw new ApiError("Email sudah terdaftar", 400);
+    }
+
+    // 2. Validasi referral code jika diisi
+    let referrer = null;
+
+    if (body.referralCode?.trim()) {
+      referrer = await tx.user.findUnique({
+        where: { referralCode: body.referralCode.trim() },
+      });
+
+      if (!referrer || referrer.deletedAt) {
+        throw new ApiError("Referral code tidak valid", 400);
+      }
+    }
+
+    // 3. Hash password
+    const hashedPassword = await argon.hash(body.password);
+
+    // 4. Buat user baru dan referral code miliknya
+    const newUser = await tx.user.create({
+      data: {
+        name: body.name,
+        email: body.email,
+        password: hashedPassword,
+        phone: body.phone,
+        referralCode: `REF-${randomUUID()}`,
+      },
+    });
+
+    // 5. Jika memakai referral, buat kupon dan hadiah poin
+    if (referrer) {
+      const coupon = await tx.coupon.create({
+        data: {
+          userId: newUser.id,
+          code: `COUPON-${randomUUID()}`,
+          discountType: "PERCENTAGE",
+          discountValue: 10n,
+          startAt: now,
+          endAt: expiredAt,
+        },
+      });
+
+      // Catat relasi referral untuk kedua user
+      const referral = await tx.referralUser.create({
+        data: {
+          referrerId: referrer.id,
+          referredUserId: newUser.id,
+          rewardPoint: 10000n,
+          couponId: coupon.id,
+        },
+      });
+
+      // Catat 10.000 poin untuk pemilik referral
+      await tx.pointTransaction.create({
+        data: {
+          userId: referrer.id,
+          type: "REFERRAL",
+          amount: 10000n,
+          referenceType: "REFERRAL",
+          referenceId: referral.id,
+          remainingAmount: 10000n,
+          expiredAt,
+        },
+      });
+    }
+
+    // 6. Return hasil
+    return { message: "register success!" };
+  });
 };
 
 export const loginService = async (body: LoginSchema) => {

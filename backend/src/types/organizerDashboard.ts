@@ -16,3 +16,7 @@ export type AcceptTransactionParams = {
   userId: string;
   transactionId: string;
 };
+export type RejectTransactionParams = {
+  userId: string;
+  transactionId: string;
+};

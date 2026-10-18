@@ -4,6 +4,7 @@ import {
   getOrganizerTransactionDetailService,
   getOrganizerTransactionsService,
   organizerDashboardService,
+  rejectOrganizerTransactionService,
 } from "../services/organizerDashboard.service.js";
 import { organizerTransactionQuerySchema } from "../validator/organizer.validator.js";
 
@@ -68,16 +69,30 @@ export const acceptOrganizerTransactionController = async (
   req: Request,
   res: Response,
 ) => {
-  const transactionId = String(req.params.transactionId);
-  const userId = res.locals.user.id as string;
+  // const transactionId = String(req.params.transactionId);
+  // const userId = res.locals.user.id as string;
 
   const transaction = await acceptOrganizerTransactionService({
-    userId,
-    transactionId,
+    userId: res.locals.user.id as string,
+    transactionId: String(req.params.transactionId),
   });
 
   res.status(200).json({
     message: "Transaksi berhasil diterima",
     data: transaction,
+  });
+};
+export const rejectOrganizerTransactionController = async (
+  req: Request,
+  res: Response,
+) => {
+  const result = await rejectOrganizerTransactionService({
+    userId: res.locals.user.id,
+    transactionId: String(req.params.transactionId),
+  });
+
+  res.status(200).send({
+    message: "Transaksi berhasil ditolak",
+    data: result,
   });
 };

@@ -6,6 +6,7 @@ import {
   getOrganizerTransactionDetailController,
   getOrganizerTransactionsController,
   organizerDashboardController,
+  rejectOrganizerTransactionController,
 } from "../controllers/organizerDashboard.controller.js";
 
 const organizerRouter = Router();
@@ -33,5 +34,11 @@ organizerRouter.put(
   verifyToken(process.env.JWT_SECRET!),
   checkRole("ORGANIZER"),
   acceptOrganizerTransactionController,
+);
+organizerRouter.put(
+  "/transactions/:transactionId/reject",
+  verifyToken(process.env.JWT_SECRET!),
+  checkRole("ORGANIZER"),
+  rejectOrganizerTransactionController,
 );
 export default organizerRouter;

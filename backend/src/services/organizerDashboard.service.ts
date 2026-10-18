@@ -3,6 +3,7 @@ import {
   AcceptTransactionParams,
   GetOrganizerTransactionDetailParams,
   GetOrganizerTransactionsParams,
+  RejectTransactionParams,
 } from "../types/organizerDashboard.js";
 import { ApiError } from "../utils/api-error.js";
 
@@ -362,6 +363,71 @@ export const acceptOrganizerTransactionService = async ({
     return {
       id: transaction.id.toString(),
       status: "DONE" as const,
+    };
+  });
+};
+
+export const rejectOrganizerTransactionService = async ({
+  userId,
+  transactionId,
+}: RejectTransactionParams) => {
+  if (!/^[1-9]\d*$/.test(transactionId)) {
+    throw new ApiError("ID transaksi tidak valid", 400);
+  }
+
+  const organizerId = BigInt(userId);
+  const id = BigInt(transactionId);
+
+  return prisma.$transaction(async (tx) => {
+    const transaction = await tx.eventTransaction.findFirst({
+      where: {
+        id,
+        event: {
+          organizerId,
+          deletedAt: null,
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+
+    if (!transaction) {
+      throw new ApiError("Transaksi tidak ditemukan", 404);
+    }
+
+    if (transaction.status !== "WAITING_FOR_ADMIN_CONFIRMATION") {
+      throw new ApiError(
+        "Transaksi tidak dapat ditolak karena statusnya bukan menunggu konfirmasi",
+        400,
+      );
+    }
+
+    const updatedTransaction = await tx.eventTransaction.updateMany({
+      where: {
+        id,
+        status: "WAITING_FOR_ADMIN_CONFIRMATION",
+        event: {
+          organizerId,
+          deletedAt: null,
+        },
+      },
+      data: {
+        status: "REJECTED",
+      },
+    });
+
+    if (updatedTransaction.count !== 1) {
+      throw new ApiError(
+        "Status transaksi sudah berubah. Silakan muat ulang data",
+        409,
+      );
+    }
+
+    return {
+      id: transaction.id.toString(),
+      status: "REJECTED" as const,
     };
   });
 };

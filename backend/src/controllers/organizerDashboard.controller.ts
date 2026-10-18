@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import {
+  acceptOrganizerTransactionService,
   getOrganizerTransactionDetailService,
   getOrganizerTransactionsService,
   organizerDashboardService,
@@ -60,6 +61,23 @@ export const getOrganizerTransactionDetailController = async (
 
   res.status(200).json({
     message: "Detail transaksi berhasil diambil",
+    data: transaction,
+  });
+};
+export const acceptOrganizerTransactionController = async (
+  req: Request,
+  res: Response,
+) => {
+  const transactionId = String(req.params.transactionId);
+  const userId = res.locals.user.id as string;
+
+  const transaction = await acceptOrganizerTransactionService({
+    userId,
+    transactionId,
+  });
+
+  res.status(200).json({
+    message: "Transaksi berhasil diterima",
     data: transaction,
   });
 };

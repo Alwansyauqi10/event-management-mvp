@@ -2,6 +2,7 @@ import { Router } from "express";
 import { checkRole } from "../middleware/role.middleware.js";
 import { verifyToken } from "../middleware/auth.middleware.js";
 import {
+  acceptOrganizerTransactionController,
   getOrganizerTransactionDetailController,
   getOrganizerTransactionsController,
   organizerDashboardController,
@@ -26,5 +27,11 @@ organizerRouter.get(
   verifyToken(process.env.JWT_SECRET!),
   checkRole("ORGANIZER"),
   getOrganizerTransactionDetailController,
+);
+organizerRouter.put(
+  "/transactions/:transactionId/accept",
+  verifyToken(process.env.JWT_SECRET!),
+  checkRole("ORGANIZER"),
+  acceptOrganizerTransactionController,
 );
 export default organizerRouter;

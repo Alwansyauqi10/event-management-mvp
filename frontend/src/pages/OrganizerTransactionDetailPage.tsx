@@ -1,3 +1,4 @@
+import { useAcceptOrganizerTransaction } from "@/hooks/useAcceptOrganizerTransaction";
 import { useOrganizerTransactionDetail } from "@/hooks/useOrganizerTransactionDetail";
 import { useParams, Link } from "react-router";
 
@@ -32,11 +33,12 @@ export default function OrganizerTransactionDetailPage() {
   const { data, isPending, isError, refetch } = useOrganizerTransactionDetail(
     transactionId ?? "",
   );
+  const { mutate: acceptTransaction, isPending: isAccepting } =
+    useAcceptOrganizerTransaction();
 
   if (isPending) {
     return <p className="p-6">Memuat detail transaksi...</p>;
   }
-
   if (isError || !data) {
     return (
       <main className="space-y-4 p-6">
@@ -56,6 +58,18 @@ export default function OrganizerTransactionDetailPage() {
   }
 
   const transaction = data.data;
+
+  const handleAcceptTransaction = () => {
+    if (!transaction) return;
+
+    const confirmed = window.confirm(
+      "Apakah kamu yakin ingin menerima transaksi ini?",
+    );
+
+    if (!confirmed) return;
+
+    acceptTransaction(transaction.id);
+  };
 
   return (
     <main className="mx-auto max-w-4xl space-y-6 p-6">
@@ -82,6 +96,16 @@ export default function OrganizerTransactionDetailPage() {
             <dd className="font-medium">
               {statusLabels[transaction.status] ?? transaction.status}
             </dd>
+            {transaction.status === "WAITING_FOR_ADMIN_CONFIRMATION" && (
+              <button
+                type="button"
+                onClick={handleAcceptTransaction}
+                disabled={isAccepting}
+                className="rounded-lg bg-green-600 px-4 py-2 font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isAccepting ? "Memproses..." : "Terima Transaksi"}
+              </button>
+            )}
           </div>
 
           <div>

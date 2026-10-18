@@ -3,6 +3,7 @@ import type {
   OrganizerDashboardResponse,
   OrganizerTransaction,
   OrganizerTransactionResponse,
+  TransactionStatus,
 } from "@/types/organizerDashboard";
 import axios from "axios";
 
@@ -73,6 +74,18 @@ export const getOrganizerTransactionDetail = async (
     message: string;
     data: OrganizerTransaction;
   }>(`/organizer/transactions/${transactionId}`);
+
+  return response.data;
+};
+
+export const acceptOrganizerTransaction = async (transactionId: string) => {
+  const response = await api.put<{
+    message: string;
+    data: {
+      id: string;
+      status: TransactionStatus;
+    };
+  }>(`/organizer/transactions/${transactionId}/accept`);
 
   return response.data;
 };

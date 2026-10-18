@@ -33,3 +33,60 @@ export type OrganizerDashboardResponse = {
   message: string;
   data: OrganizerDashboardData;
 };
+
+export type OrganizerTransaction = {
+  id: string;
+  transactionCode: string;
+  status: TransactionStatus;
+  subTotal: string;
+  pointDiscount: string;
+  voucherDiscount: string;
+  couponDiscount: string;
+  totalAmount: string;
+  createdAt: string;
+  paymentProofDeadline: string | null;
+  adminConfirmationDeadline: string | null;
+  user: {
+    name: string;
+    email: string;
+  };
+  event: {
+    id: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    location: string;
+  };
+  items: {
+    ticketId: string;
+    price: string;
+    quantity: number;
+    subTotal: string;
+    ticket: {
+      name: string;
+    };
+  }[];
+  paymentProof: {
+    fileUrl: string;
+    uploadedAt: string;
+  } | null;
+};
+
+export type OrganizerTransactionResponse = {
+  message: string;
+  data: {
+    transactions: OrganizerTransaction[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+};
+
+export type GetOrganizerTransactionsParams = {
+  page: number;
+  limit: number;
+  status?: TransactionStatus;
+};

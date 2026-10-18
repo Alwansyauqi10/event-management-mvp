@@ -1,6 +1,8 @@
 import { useOrganizerTransactions } from "@/hooks/useOrganizerTransaction";
-import type { TransactionStatus } from "@/lib/axios";
+import type { TransactionStatus } from "@/types/organizerDashboard";
+
 import { useState } from "react";
+import { Link } from "react-router";
 
 const statusOptions: {
   value: TransactionStatus;
@@ -115,6 +117,7 @@ export default function OrganizerTransactionsPage() {
                 <th className="p-3">Tanggal Transaksi</th>
                 <th className="p-3">Total</th>
                 <th className="p-3">Status</th>
+                <th className="p-3">Aksi</th>
               </tr>
             </thead>
 
@@ -136,6 +139,15 @@ export default function OrganizerTransactionsPage() {
                     {formatCurrency(transaction.totalAmount)}
                   </td>
                   <td className="p-3">{getStatusLabel(transaction.status)}</td>
+
+                  <td className="p-3">
+                    <Link
+                      to={`/organizer/transactions/${transaction.id}`}
+                      className="text-blue-600 hover:underline"
+                    >
+                      Detail
+                    </Link>
+                  </td>
                 </tr>
               ))}
             </tbody>

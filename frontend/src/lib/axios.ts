@@ -1,4 +1,9 @@
-import type { OrganizerDashboardResponse } from "@/types/organizerDashboard";
+import type {
+  GetOrganizerTransactionsParams,
+  OrganizerDashboardResponse,
+  OrganizerTransaction,
+  OrganizerTransactionResponse,
+} from "@/types/organizerDashboard";
 import axios from "axios";
 
 export const api = axios.create({
@@ -50,69 +55,6 @@ export const getOrganizerDashboard =
     return response.data;
   };
 
-export type TransactionStatus =
-  | "WAITING_FOR_PAYMENT"
-  | "WAITING_FOR_ADMIN_CONFIRMATION"
-  | "DONE"
-  | "REJECTED"
-  | "EXPIRED"
-  | "CANCELED";
-
-export type OrganizerTransaction = {
-  id: string;
-  transactionCode: string;
-  status: TransactionStatus;
-  subTotal: string;
-  pointDiscount: string;
-  voucherDiscount: string;
-  couponDiscount: string;
-  totalAmount: string;
-  createdAt: string;
-  paymentProofDeadline: string | null;
-  adminConfirmationDeadline: string | null;
-  user: {
-    name: string;
-    email: string;
-  };
-  event: {
-    id: string;
-    name: string;
-    startDate: string;
-  };
-  items: {
-    ticketId: string;
-    price: string;
-    quantity: number;
-    subTotal: string;
-    ticket: {
-      name: string;
-    };
-  }[];
-  paymentProof: {
-    fileUrl: string;
-    uploadedAt: string;
-  } | null;
-};
-
-export type OrganizerTransactionResponse = {
-  message: string;
-  data: {
-    transactions: OrganizerTransaction[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    };
-  };
-};
-
-type GetOrganizerTransactionsParams = {
-  page: number;
-  limit: number;
-  status?: TransactionStatus;
-};
-
 export const getOrganizerTransactions = async (
   params: GetOrganizerTransactionsParams,
 ): Promise<OrganizerTransactionResponse> => {
@@ -120,6 +62,17 @@ export const getOrganizerTransactions = async (
     "/organizer/transactions",
     { params },
   );
+
+  return response.data;
+};
+
+export const getOrganizerTransactionDetail = async (
+  transactionId: string,
+): Promise<{ message: string; data: OrganizerTransaction }> => {
+  const response = await api.get<{
+    message: string;
+    data: OrganizerTransaction;
+  }>(`/organizer/transactions/${transactionId}`);
 
   return response.data;
 };

@@ -18,6 +18,7 @@ import PointHistoryPage from "./pages/PointHistoryPage";
 import OrganizerDashboardPage from "./pages/OrganizerDashboardPage";
 import RoleProtectedRoute from "./components/RoleProtectedRoute";
 import OrganizerTransactionsPage from "./pages/OrganizerTransactionPage";
+import OrganizerTransactionDetailPage from "./pages/OrganizerTransactionDetailPage";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +66,10 @@ const router = createBrowserRouter([
           {
             path: "/organizer/transactions",
             element: <OrganizerTransactionsPage />,
+          },
+          {
+            path: "organizer/transactions/:transactionId",
+            element: <OrganizerTransactionDetailPage />,
           },
         ],
       },

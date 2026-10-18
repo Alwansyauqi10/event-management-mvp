@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import {
+  getOrganizerTransactionDetailService,
   getOrganizerTransactionsService,
   organizerDashboardService,
 } from "../services/organizerDashboard.service.js";
@@ -42,5 +43,23 @@ export const getOrganizerTransactionsController = async (
   res.status(200).json({
     message: "Daftar transaksi organizer berhasil diambil",
     data: result,
+  });
+};
+
+export const getOrganizerTransactionDetailController = async (
+  req: Request,
+  res: Response,
+) => {
+  const transactionId = String(req.params.transactionId);
+  const userId = res.locals.user.id as string;
+
+  const transaction = await getOrganizerTransactionDetailService({
+    userId,
+    transactionId,
+  });
+
+  res.status(200).json({
+    message: "Detail transaksi berhasil diambil",
+    data: transaction,
   });
 };

@@ -1,5 +1,7 @@
 import { TransactionStatus } from "../generated/prisma/enums.js";
 import { prisma } from "../lib/prisma.js";
+import { ApiError } from "../utils/api-error.js";
+import { organizerTransactionQuerySchema } from "../validator/organizer.validator.js";
 
 export const organizerDashboardService = async (userId: string) => {
   const organizerId = BigInt(userId);
@@ -207,5 +209,103 @@ export const getOrganizerTransactionsService = async ({
       total,
       totalPages: Math.ceil(total / limit),
     },
+  };
+};
+
+type GetOrganizerTransactionDetailParams = {
+  userId: string;
+  transactionId: string;
+};
+
+export const getOrganizerTransactionDetailService = async ({
+  userId,
+  transactionId,
+}: GetOrganizerTransactionDetailParams) => {
+  if (!/^[1-9]\d*$/.test(transactionId)) {
+    throw new ApiError("ID transaksi tidak valid", 400);
+  }
+
+  const organizerId = BigInt(userId);
+  const id = BigInt(transactionId);
+
+  const transaction = await prisma.eventTransaction.findFirst({
+    where: {
+      id,
+      event: {
+        organizerId,
+        deletedAt: null,
+      },
+    },
+    select: {
+      id: true,
+      transactionCode: true,
+      status: true,
+      subTotal: true,
+      pointDiscount: true,
+      voucherDiscount: true,
+      couponDiscount: true,
+      totalAmount: true,
+      createdAt: true,
+      paymentProofDeadline: true,
+      adminConfirmationDeadline: true,
+      user: {
+        select: {
+          name: true,
+          email: true,
+        },
+      },
+      event: {
+        select: {
+          id: true,
+          name: true,
+          startDate: true,
+          endDate: true,
+          location: true,
+        },
+      },
+      items: {
+        select: {
+          ticketId: true,
+          price: true,
+          quantity: true,
+          subTotal: true,
+          ticket: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      },
+      paymentProof: {
+        select: {
+          fileUrl: true,
+          uploadedAt: true,
+        },
+      },
+    },
+  });
+
+  if (!transaction) {
+    throw new ApiError("Transaksi tidak ditemukan", 404);
+  }
+
+  return {
+    ...transaction,
+    id: transaction.id.toString(),
+    subTotal: transaction.subTotal.toString(),
+    pointDiscount: transaction.pointDiscount.toString(),
+    voucherDiscount: transaction.voucherDiscount.toString(),
+    couponDiscount: transaction.couponDiscount.toString(),
+    totalAmount: transaction.totalAmount.toString(),
+    event: {
+      ...transaction.event,
+      id: transaction.event.id.toString(),
+    },
+    items: transaction.items.map((item) => ({
+      ...item,
+      ticketId: item.ticketId.toString(),
+      price: item.price.toString(),
+      subTotal: item.subTotal.toString(),
+    })),
   };
 };

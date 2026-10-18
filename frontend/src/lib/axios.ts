@@ -89,3 +89,14 @@ export const acceptOrganizerTransaction = async (transactionId: string) => {
 
   return response.data;
 };
+export const rejectOrganizerTransaction = async (transactionId: string) => {
+  const response = await api.put<{
+    message: string;
+    data: {
+      id: string;
+      status: TransactionStatus;
+    };
+  }>(`/organizer/transactions/${transactionId}/reject`);
+
+  return response.data;
+};

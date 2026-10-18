@@ -1,4 +1,5 @@
-import { getOrganizerTransactions, type TransactionStatus } from "@/lib/axios";
+import { getOrganizerTransactions } from "@/lib/axios";
+import type { TransactionStatus } from "@/types/organizerDashboard";
 
 import { useQuery } from "@tanstack/react-query";
 

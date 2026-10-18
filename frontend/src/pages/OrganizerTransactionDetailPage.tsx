@@ -1,5 +1,6 @@
 import { useAcceptOrganizerTransaction } from "@/hooks/useAcceptOrganizerTransaction";
 import { useOrganizerTransactionDetail } from "@/hooks/useOrganizerTransactionDetail";
+import { useRejectOrganizerTransaction } from "@/hooks/useRejectOrganizerTransaction";
 import { useParams, Link } from "react-router";
 
 const formatCurrency = (value: string) =>
@@ -35,6 +36,8 @@ export default function OrganizerTransactionDetailPage() {
   );
   const { mutate: acceptTransaction, isPending: isAccepting } =
     useAcceptOrganizerTransaction();
+  const { mutate: rejectTransaction, isPending: isRejecting } =
+    useRejectOrganizerTransaction();
 
   if (isPending) {
     return <p className="p-6">Memuat detail transaksi...</p>;
@@ -70,6 +73,17 @@ export default function OrganizerTransactionDetailPage() {
 
     acceptTransaction(transaction.id);
   };
+  const handleRejectTransaction = () => {
+    if (!transaction) return;
+
+    const confirmed = window.confirm(
+      "Apakah kamu yakin ingin menolak transaksi ini? Tindakan ini tidak dapat dibatalkan.",
+    );
+
+    if (!confirmed) return;
+
+    rejectTransaction(transaction.id);
+  };
 
   return (
     <main className="mx-auto max-w-4xl space-y-6 p-6">
@@ -96,15 +110,27 @@ export default function OrganizerTransactionDetailPage() {
             <dd className="font-medium">
               {statusLabels[transaction.status] ?? transaction.status}
             </dd>
+
             {transaction.status === "WAITING_FOR_ADMIN_CONFIRMATION" && (
-              <button
-                type="button"
-                onClick={handleAcceptTransaction}
-                disabled={isAccepting}
-                className="rounded-lg bg-green-600 px-4 py-2 font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isAccepting ? "Memproses..." : "Terima Transaksi"}
-              </button>
+              <div className="mt-3 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={handleAcceptTransaction}
+                  disabled={isAccepting || isRejecting}
+                  className="rounded-lg bg-green-600 px-4 py-2 font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isAccepting ? "Memproses..." : "Terima Transaksi"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleRejectTransaction}
+                  disabled={isAccepting || isRejecting}
+                  className="rounded-lg bg-red-600 px-4 py-2 font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isRejecting ? "Memproses..." : "Tolak Transaksi"}
+                </button>
+              </div>
             )}
           </div>
 

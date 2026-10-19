@@ -112,7 +112,7 @@ function EventDetailPage() {
             )}
           </div>
 
-          <div>
+          <div className="pt-2">
             <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-600">
               {event.category.name}
             </span>
@@ -120,10 +120,6 @@ function EventDetailPage() {
             <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-900 lg:text-5xl">
               {event.name}
             </h1>
-
-            <p className="mt-4 text-lg leading-8 text-slate-600">
-              {event.description}
-            </p>
 
             <div className="mt-6 space-y-5 border-t border-slate-200 pt-6">
               <div>
@@ -359,7 +355,7 @@ function EventDetailPage() {
                             className="flex items-start justify-between gap-3"
                           >
                             <div className="min-w-0">
-                              <p className="break-words text-sm font-medium text-slate-800">
+                              <p className="wrap-break-word text-sm font-medium text-slate-800">
                                 {ticket.name}
                               </p>
                               <p className="mt-1 text-xs text-slate-500">
@@ -392,7 +388,7 @@ function EventDetailPage() {
                     <p className="text-sm text-slate-600">
                       Estimated subtotal
                     </p>
-                    <p className="mt-1 break-words text-2xl font-bold tracking-tight text-slate-900">
+                    <p className="mt-1 wrap-break-word text-2xl font-bold tracking-tight text-slate-900">
                       {formatPrice(subtotal)}
                     </p>
                   </div>

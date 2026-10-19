@@ -172,6 +172,7 @@ export default function OrganizerDashboardPage() {
     <main className="min-h-screen bg-gray-50/80 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-8">
         {/* Header */}
+
         <header className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
@@ -188,14 +189,24 @@ export default function OrganizerDashboardPage() {
             </p>
           </div>
 
-          <Link
-            to="/organizer/transactions"
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
-          >
-            <span aria-hidden="true">▤</span>
-            Lihat Transaksi
-            <span aria-hidden="true">→</span>
-          </Link>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Link
+              to="/organizer/events/create"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800 focus:outline-none focus:ring-4 focus:ring-gray-200"
+            >
+              <span aria-hidden="true">+</span>
+              Buat Event
+            </Link>
+
+            <Link
+              to="/organizer/transactions"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
+            >
+              <span aria-hidden="true">▤</span>
+              Lihat Transaksi
+              <span aria-hidden="true">→</span>
+            </Link>
+          </div>
         </header>
 
         {/* Main Statistics */}

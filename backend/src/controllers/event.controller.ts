@@ -4,7 +4,12 @@ import {
   getEventLocationsService,
   getEventByIdService,
   getEventTicketsService,
+  getEventCategoriesService,
 } from "../services/event.service.js";
+import { prisma } from "../lib/prisma.js";
+import { createEventService } from "../services/event.service.js";
+import { cloudinary } from "../lib/cloudinary.js";
+
 
 export const getEventsController = async (
   req: Request,
@@ -184,6 +189,175 @@ export const getEventTicketsController = async (
 
     res.status(500).json({
       message: "Failed to get event tickets",
+    });
+  }
+};
+
+export const getEventCategoriesController = async (
+  _req: Request,
+  res: Response,
+) => {
+  try {
+    const categories = await getEventCategoriesService();
+
+    const serializedCategories = categories.map((category) => ({
+      ...category,
+      id: category.id.toString(),
+    }));
+
+    res.status(200).json({
+      data: serializedCategories,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Failed to get event categories",
+    });
+  }
+};
+
+export const createEventController = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const organizerId = res.locals.user?.id;
+
+    if (!organizerId) {
+      res.status(401).json({ message: "Silakan login terlebih dahulu" });
+      return;
+    }
+
+    const {
+      name,
+      categoryId,
+      location,
+      startDate,
+      endDate,
+      description,
+      tickets: ticketsJson,
+    } = req.body;
+
+    let parsedTickets: unknown;
+
+    try {
+      parsedTickets = JSON.parse(ticketsJson);
+    } catch {
+      res.status(400).json({ message: "Format data tiket tidak valid" });
+      return;
+    }
+
+    if (!Array.isArray(parsedTickets) || parsedTickets.length === 0) {
+      res.status(400).json({ message: "Minimal satu tipe tiket wajib diisi" });
+      return;
+    }
+
+    const tickets = parsedTickets.map((ticket: unknown) => {
+      if (!ticket || typeof ticket !== "object") {
+        throw new Error("Data tiket tidak valid");
+      }
+
+      const item = ticket as Record<string, unknown>;
+      const price = String(item.price ?? "");
+      const quantity = Number(item.quantity);
+
+      if (
+        typeof item.name !== "string" ||
+        !item.name.trim() ||
+        !/^\d+$/.test(price) ||
+        !Number.isSafeInteger(Number(price)) ||
+        !Number.isSafeInteger(quantity) ||
+        quantity < 1
+      ) {
+        throw new Error("Nama, harga, atau jumlah tiket tidak valid");
+      }
+
+      return {
+        name: item.name.trim(),
+        price,
+        quantity,
+      };
+    });
+
+    let imageUrl: string | null = null;
+
+    if (req.file) {
+      imageUrl = await new Promise<string>((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            folder: "event-management/events",
+            resource_type: "image",
+          },
+          (error, result) => {
+            if (error) {
+              reject(error);
+              return;
+            }
+
+            if (!result) {
+              reject(new Error("Upload poster gagal"));
+              return;
+            }
+
+            resolve(result.secure_url);
+          },
+        );
+
+        stream.end(req.file!.buffer);
+      });
+    }
+
+    const event = await createEventService({
+      organizerId: BigInt(organizerId),
+      categoryId,
+      name,
+      description,
+      location,
+      startDate,
+      endDate,
+      image: imageUrl,
+      tickets,
+    });
+
+    
+  res.status(201).json({
+    message: "Event berhasil dibuat",
+    data: {
+      id: event.id.toString(),
+      organizerId: event.organizerId.toString(),
+      categoryId: event.categoryId.toString(),
+      name: event.name,
+      description: event.description,
+      location: event.location,
+      startDate: event.startDate,
+      endDate: event.endDate,
+      availableSeats: event.availableSeats,
+      status: event.status,
+      image: event.image,
+      category: {
+        ...event.category,
+        id: event.category.id.toString(),
+      },
+      tickets: event.tickets.map((ticket) => ({
+        id: ticket.id.toString(),
+        eventId: ticket.eventId.toString(),
+        name: ticket.name,
+        price: ticket.price.toString(),
+        quantity: ticket.quantity,
+        availableQuantity: ticket.availableQuantity,
+      })),
+    },
+  });
+
+  } catch (error) {
+    console.error("Create event error:", error);
+
+    res.status(400).json({
+      message:
+        error instanceof Error
+          ? error.message
+          : "Gagal membuat event",
     });
   }
 };

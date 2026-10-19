@@ -15,6 +15,10 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import EventDetailPage from "./pages/EventDetail";
 import NotFoundPage from "./pages/NotFoundPage";
 import PointHistoryPage from "./pages/PointHistoryPage";
+import OrganizerDashboardPage from "./pages/OrganizerDashboardPage";
+import RoleProtectedRoute from "./components/RoleProtectedRoute";
+import OrganizerTransactionsPage from "./pages/OrganizerTransactionPage";
+import OrganizerTransactionDetailPage from "./pages/OrganizerTransactionDetailPage";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +56,23 @@ const router = createBrowserRouter([
           },
         ],
       },
+      {
+        element: <RoleProtectedRoute allowedRole="ORGANIZER" />,
+        children: [
+          {
+            path: "/organizer/dashboard",
+            element: <OrganizerDashboardPage />,
+          },
+          {
+            path: "/organizer/transactions",
+            element: <OrganizerTransactionsPage />,
+          },
+          {
+            path: "organizer/transactions/:transactionId",
+            element: <OrganizerTransactionDetailPage />,
+          },
+        ],
+      },
     ],
   },
   {
@@ -61,6 +82,10 @@ const router = createBrowserRouter([
   {
     path: "/reset-password",
     element: <ResetPasswordPage />,
+  },
+  {
+    path: "/*",
+    element: <NotFoundPage />,
   },
   {
     path: "/*",

@@ -26,6 +26,7 @@ export const useRegister = () => {
     },
     onSuccess: () => {
       toast.success("Register success!");
+
       navigate("/login");
     },
     onError: (error: AxiosError<{ message: string }>) => {
@@ -47,7 +48,13 @@ export const useLogin = () => {
     onSuccess: (data) => {
       localStorage.setItem("accessToken", data.accessToken);
       toast.success("Login success!");
-      navigate("/profile");
+      if (data.user.role === "CUSTOMER") {
+        navigate("/profile");
+      } else if (data.user.role === "ORGANIZER") {
+        navigate("/organizer/dashboard");
+      } else {
+        navigate("/");
+      }
     },
     onError: (error: AxiosError<{ message: string }>) => {
       toast.error(error.response?.data?.message || "Login failed!");

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router";
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,31 +18,23 @@ function Navbar() {
 
         {/* Desktop Navigation */}
         <div className="hidden items-center gap-8 font-manrope text-sm font-bold text-haya-text md:flex">
-          <a
-            href="/"
-            className="transition hover:text-haya-blue"
-          >
+          <a href="/" className="transition hover:text-haya-blue">
             Events
           </a>
-          <a
-            href="/"
-            className="transition hover:text-haya-blue"
-          >
+          <a href="/" className="transition hover:text-haya-blue">
             Categories
           </a>
-          <a
-            href="/"
-            className="transition hover:text-haya-blue"
-          >
+          <a href="/" className="transition hover:text-haya-blue">
             About
           </a>
         </div>
 
         {/* Desktop Login */}
-        <button className="hidden rounded-3xl bg-haya-blue px-5 py-2 font-manrope text-sm font-semibold text-white transition hover:bg-haya-blue-light md:block">
-          Login
-        </button>
-
+        <Link to="/login">
+          <button className="hidden rounded-3xl bg-haya-blue px-5 py-2 font-manrope text-sm font-semibold text-white transition hover:bg-haya-blue-light md:block">
+            Login
+          </button>
+        </Link>
         {/* Mobile Menu Button */}
         <button
           type="button"
@@ -50,9 +43,7 @@ function Navbar() {
           aria-label="Toggle menu"
           aria-expanded={isOpen}
         >
-          <span className="text-2xl">
-            {isOpen ? "×" : "☰"}
-          </span>
+          <span className="text-2xl">{isOpen ? "×" : "☰"}</span>
         </button>
       </div>
 

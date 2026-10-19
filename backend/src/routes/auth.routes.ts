@@ -43,17 +43,6 @@ authRoutes.put(
   changePasswordController,
 );
 
-authRoutes.get(
-  "/organizer-test",
-  verifyToken(process.env.JWT_SECRET!),
-  checkRole("ORGANIZER"),
-  (req, res) => {
-    res.json({
-      message: "Kamu adalah organizer!",
-      user: res.locals.user,
-    });
-  },
-);
 authRoutes.post(
   "/forgot-password",
   validate(forgotPasswordSchema),

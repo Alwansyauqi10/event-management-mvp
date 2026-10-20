@@ -5,6 +5,7 @@ import {
   getEventByIdController,
   getEventTicketsController,
   getEventCategoriesController,
+  getOrganizerEventsController,
 } from "../controllers/event.controller.js";
 
 import { createEventController } from "../controllers/event.controller.js";
@@ -25,13 +26,17 @@ router.post(
   createEventController,
 );
 
+router.get(
+  "/organizer",
+  verifyToken(process.env.JWT_SECRET!),
+  checkRole("ORGANIZER"),
+  getOrganizerEventsController,
+);
 
 router.get("/categories", getEventCategoriesController);
 router.get("/", getEventsController);
 router.get("/locations", getEventLocationsController);
 router.get("/:id/tickets", getEventTicketsController);
 router.get("/:id", getEventByIdController);
-
-
 
 export default router;

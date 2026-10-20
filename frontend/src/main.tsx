@@ -1,29 +1,37 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import MainLayout from "./layouts/MainLayout";
+import { Toaster } from "sonner";
+
 import "./index.css";
+
+import MainLayout from "./layouts/MainLayout";
+import OrganizerLayout from "./layouts/OrganizerLayout";
+
+import EventDetailPage from "./pages/EventDetail";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import Home from "./pages/Home";
 import LoginPage from "./pages/LoginPage";
-import ProfilePage from "./pages/ProfilePage";
-import ProtectedRoute from "./components/ProtectedRoute";
-import RegisterPage from "./pages/RegisterPage";
-import { Toaster } from "sonner";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-import EventDetailPage from "./pages/EventDetail";
 import NotFoundPage from "./pages/NotFoundPage";
 import PointHistoryPage from "./pages/PointHistoryPage";
+import ProfilePage from "./pages/ProfilePage";
+import RegisterPage from "./pages/RegisterPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+
 import OrganizerDashboardPage from "./pages/OrganizerDashboardPage";
-import RoleProtectedRoute from "./components/RoleProtectedRoute";
-import OrganizerTransactionsPage from "./pages/OrganizerTransactionPage";
-import OrganizerTransactionDetailPage from "./pages/OrganizerTransactionDetailPage";
+
 import CreateEventPage from "./pages/CreateEventPage";
+import OrganizerTransactionDetailPage from "./pages/OrganizerTransactionDetailPage";
+import OrganizerTransactionsPage from "./pages/OrganizerTransactionPage";
+
+import RoleProtectedRoute from "./components/RoleProtectedRoute";
+import OrganizerEventsPage from "./pages/OrganizerEventPage";
 
 const queryClient = new QueryClient();
 
 const router = createBrowserRouter([
+  // Halaman autentikasi
   {
     path: "/login",
     element: <LoginPage />,
@@ -32,7 +40,16 @@ const router = createBrowserRouter([
     path: "/register",
     element: <RegisterPage />,
   },
+  {
+    path: "/forgot-password",
+    element: <ForgotPasswordPage />,
+  },
+  {
+    path: "/reset-password",
+    element: <ResetPasswordPage />,
+  },
 
+  // Halaman publik dan fitur khusus CUSTOMER
   {
     element: <MainLayout />,
     children: [
@@ -44,8 +61,9 @@ const router = createBrowserRouter([
         path: "/events/:id",
         element: <EventDetailPage />,
       },
+
       {
-        element: <ProtectedRoute />,
+        element: <RoleProtectedRoute allowedRole="CUSTOMER" />,
         children: [
           {
             path: "/profile",
@@ -57,12 +75,27 @@ const router = createBrowserRouter([
           },
         ],
       },
+    ],
+  },
+
+  // Seluruh halaman organizer dilindungi role ORGANIZER
+  {
+    element: <RoleProtectedRoute allowedRole="ORGANIZER" />,
+    children: [
       {
-        element: <RoleProtectedRoute allowedRole="ORGANIZER" />,
+        element: <OrganizerLayout />,
         children: [
+          {
+            path: "/organizer/profile",
+            element: <ProfilePage />,
+          },
           {
             path: "/organizer/dashboard",
             element: <OrganizerDashboardPage />,
+          },
+          {
+            path: "/organizer/events",
+            element: <OrganizerEventsPage />,
           },
           {
             path: "/organizer/events/create",
@@ -73,27 +106,17 @@ const router = createBrowserRouter([
             element: <OrganizerTransactionsPage />,
           },
           {
-            path: "organizer/transactions/:transactionId",
+            path: "/organizer/transactions/:transactionId",
             element: <OrganizerTransactionDetailPage />,
           },
         ],
       },
     ],
   },
+
+  // Halaman tidak ditemukan
   {
-    path: "/forgot-password",
-    element: <ForgotPasswordPage />,
-  },
-  {
-    path: "/reset-password",
-    element: <ResetPasswordPage />,
-  },
-  {
-    path: "/*",
-    element: <NotFoundPage />,
-  },
-  {
-    path: "/*",
+    path: "*",
     element: <NotFoundPage />,
   },
 ]);
@@ -102,7 +125,7 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
-      <Toaster position="top-right" richColors></Toaster>
+      <Toaster position="top-right" richColors />
     </QueryClientProvider>
   </StrictMode>,
 );

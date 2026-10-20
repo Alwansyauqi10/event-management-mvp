@@ -44,7 +44,6 @@ export type LocationsResponse = {
   data: string[];
 };
 
-
 // Category Event
 export type EventCategory = {
   id: string;
@@ -56,7 +55,6 @@ export type EventCategory = {
 export type EventCategoriesResponse = {
   data: EventCategory[];
 };
-
 
 export const getEvents = async (
   params: GetEventsParams = {},
@@ -76,9 +74,8 @@ export const getEventLocations = async (): Promise<LocationsResponse> => {
 
 export const getEventCategories =
   async (): Promise<EventCategoriesResponse> => {
-    const response = await api.get<EventCategoriesResponse>(
-      "/events/categories",
-    );
+    const response =
+      await api.get<EventCategoriesResponse>("/events/categories");
 
     return response.data;
   };
@@ -86,13 +83,10 @@ export const getEventCategories =
 export const getEventById = async (
   id: string,
 ): Promise<EventDetailResponse> => {
-  const response = await api.get<EventDetailResponse>(
-    `/events/${id}`,
-  );
+  const response = await api.get<EventDetailResponse>(`/events/${id}`);
 
   return response.data;
 };
-
 
 // Tickets
 export type Ticket = {
@@ -121,9 +115,34 @@ export const getEventTickets = async (
   return response.data;
 };
 
-
 // Create Event
 export const createEvent = async (formData: FormData) => {
   const response = await api.post("/events", formData);
+  return response.data;
+};
+
+export type OrganizerEvent = Event & {
+  _count: {
+    eventTransactions: number;
+  };
+};
+
+export type OrganizerEventsResponse = {
+  data: OrganizerEvent[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
+export const getOrganizerEvents = async (
+  params: { page?: number; limit?: number } = {},
+): Promise<OrganizerEventsResponse> => {
+  const response = await api.get<OrganizerEventsResponse>("/events/organizer", {
+    params,
+  });
+
   return response.data;
 };

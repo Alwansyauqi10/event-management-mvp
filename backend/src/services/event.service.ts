@@ -1,6 +1,5 @@
 import { prisma } from "../lib/prisma.js";
 
-
 type GetEventsParams = {
   search?: string;
   category?: string;
@@ -127,9 +126,7 @@ export const getEventCategoriesService = async () => {
   });
 };
 
-export const createEventService = async (
-  input: CreateEventInput,
-) => {
+export const createEventService = async (input: CreateEventInput) => {
   const tickets = input.tickets;
 
   if (!tickets.length) {
@@ -141,14 +138,14 @@ export const createEventService = async (
       throw new Error("Nama tiket wajib diisi");
     }
 
-    if (!/^\d+$/.test(ticket.price) || !Number.isSafeInteger(Number(ticket.price))) {
+    if (
+      !/^\d+$/.test(ticket.price) ||
+      !Number.isSafeInteger(Number(ticket.price))
+    ) {
       throw new Error("Harga tiket tidak valid");
     }
 
-    if (
-      !Number.isSafeInteger(ticket.quantity) ||
-      ticket.quantity < 1
-    ) {
+    if (!Number.isSafeInteger(ticket.quantity) || ticket.quantity < 1) {
       throw new Error("Jumlah tiket minimal 1");
     }
   }
@@ -196,4 +193,44 @@ export const createEventService = async (
       },
     });
   });
+};
+
+export const getOrganizerEventsService = async (
+  organizerId: bigint,
+  page: number,
+  limit: number,
+) => {
+  const where = {
+    organizerId,
+    deletedAt: null,
+  };
+
+  const [events, total] = await Promise.all([
+    prisma.event.findMany({
+      where,
+      include: {
+        category: true,
+        _count: {
+          select: {
+            eventTransactions: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+
+    prisma.event.count({ where }),
+  ]);
+
+  return {
+    events,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
 };

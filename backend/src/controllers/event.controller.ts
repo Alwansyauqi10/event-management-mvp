@@ -5,41 +5,28 @@ import {
   getEventByIdService,
   getEventTicketsService,
   getEventCategoriesService,
+  getOrganizerEventsService,
 } from "../services/event.service.js";
 import { prisma } from "../lib/prisma.js";
 import { createEventService } from "../services/event.service.js";
 import { cloudinary } from "../lib/cloudinary.js";
 
-
-export const getEventsController = async (
-  req: Request,
-  res: Response,
-) => {
+export const getEventsController = async (req: Request, res: Response) => {
   try {
     const search =
-      typeof req.query.search === "string"
-        ? req.query.search
-        : undefined;
+      typeof req.query.search === "string" ? req.query.search : undefined;
 
     const category =
-      typeof req.query.category === "string"
-        ? req.query.category
-        : undefined;
+      typeof req.query.category === "string" ? req.query.category : undefined;
 
     const location =
-      typeof req.query.location === "string"
-        ? req.query.location
-        : undefined;
+      typeof req.query.location === "string" ? req.query.location : undefined;
 
     const page =
-      typeof req.query.page === "string"
-        ? Number(req.query.page)
-        : 1;
+      typeof req.query.page === "string" ? Number(req.query.page) : 1;
 
     const limit =
-      typeof req.query.limit === "string"
-        ? Number(req.query.limit)
-        : 8;
+      typeof req.query.limit === "string" ? Number(req.query.limit) : 8;
 
     const { events, total } = await getEventsService({
       search,
@@ -99,10 +86,7 @@ export const getEventLocationsController = async (
   }
 };
 
-export const getEventByIdController = async (
-  req: Request,
-  res: Response,
-) => {
+export const getEventByIdController = async (req: Request, res: Response) => {
   try {
     const idParam = req.params.id;
 
@@ -217,10 +201,7 @@ export const getEventCategoriesController = async (
   }
 };
 
-export const createEventController = async (
-  req: Request,
-  res: Response,
-) => {
+export const createEventController = async (req: Request, res: Response) => {
   try {
     const organizerId = res.locals.user?.id;
 
@@ -320,44 +301,110 @@ export const createEventController = async (
       tickets,
     });
 
-    
-  res.status(201).json({
-    message: "Event berhasil dibuat",
-    data: {
-      id: event.id.toString(),
-      organizerId: event.organizerId.toString(),
-      categoryId: event.categoryId.toString(),
-      name: event.name,
-      description: event.description,
-      location: event.location,
-      startDate: event.startDate,
-      endDate: event.endDate,
-      availableSeats: event.availableSeats,
-      status: event.status,
-      image: event.image,
-      category: {
-        ...event.category,
-        id: event.category.id.toString(),
+    res.status(201).json({
+      message: "Event berhasil dibuat",
+      data: {
+        id: event.id.toString(),
+        organizerId: event.organizerId.toString(),
+        categoryId: event.categoryId.toString(),
+        name: event.name,
+        description: event.description,
+        location: event.location,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        availableSeats: event.availableSeats,
+        status: event.status,
+        image: event.image,
+        category: {
+          ...event.category,
+          id: event.category.id.toString(),
+        },
+        tickets: event.tickets.map((ticket) => ({
+          id: ticket.id.toString(),
+          eventId: ticket.eventId.toString(),
+          name: ticket.name,
+          price: ticket.price.toString(),
+          quantity: ticket.quantity,
+          availableQuantity: ticket.availableQuantity,
+        })),
       },
-      tickets: event.tickets.map((ticket) => ({
-        id: ticket.id.toString(),
-        eventId: ticket.eventId.toString(),
-        name: ticket.name,
-        price: ticket.price.toString(),
-        quantity: ticket.quantity,
-        availableQuantity: ticket.availableQuantity,
-      })),
-    },
-  });
-
+    });
   } catch (error) {
     console.error("Create event error:", error);
 
     res.status(400).json({
-      message:
-        error instanceof Error
-          ? error.message
-          : "Gagal membuat event",
+      message: error instanceof Error ? error.message : "Gagal membuat event",
+    });
+  }
+};
+
+export const getOrganizerEventsController = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const organizerId = res.locals.user?.id;
+
+    if (!organizerId) {
+      res.status(401).json({
+        message: "Silakan login terlebih dahulu",
+      });
+      return;
+    }
+
+    const page =
+      typeof req.query.page === "string" ? Number(req.query.page) : 1;
+
+    const limit =
+      typeof req.query.limit === "string" ? Number(req.query.limit) : 8;
+
+    if (
+      !Number.isSafeInteger(page) ||
+      page < 1 ||
+      !Number.isSafeInteger(limit) ||
+      limit < 1 ||
+      limit > 100
+    ) {
+      res.status(400).json({
+        message: "Parameter page atau limit tidak valid",
+      });
+      return;
+    }
+
+    const result = await getOrganizerEventsService(
+      BigInt(organizerId),
+      page,
+      limit,
+    );
+
+    const serializedEvents = result.events.map((event) => ({
+      ...event,
+      id: event.id.toString(),
+      organizerId: event.organizerId.toString(),
+      categoryId: event.categoryId.toString(),
+      category: {
+        ...event.category,
+        id: event.category.id.toString(),
+      },
+      _count: {
+        eventTransactions: event._count.eventTransactions,
+      },
+    }));
+
+    res.status(200).json({
+      data: serializedEvents,
+      meta: {
+        page: result.page,
+        limit: result.limit,
+        total: result.total,
+        totalPages: result.totalPages,
+      },
+    });
+  } catch (error) {
+    console.error("Get organizer events error:", error);
+
+    res.status(500).json({
+      message: "Gagal mengambil event organizer",
     });
   }
 };

@@ -1,17 +1,16 @@
 import { Router } from "express";
 import {
-  getEventsController,
-  getEventLocationsController,
   getEventByIdController,
-  getEventTicketsController,
   getEventCategoriesController,
-  getOrganizerEventsController,
+  getEventLocationsController,
+  getEventsController,
+  getEventTicketsController,
 } from "../controllers/event.controller.js";
 
 import { createEventController } from "../controllers/event.controller.js";
 import { verifyToken } from "../middleware/auth.middleware.js";
-import { checkRole } from "../middleware/role.middleware.js";
 import { uploadEventImage } from "../middleware/event-upload.middleware.js";
+import { checkRole } from "../middleware/role.middleware.js";
 import { validate } from "../middleware/validator.middleware.js";
 import { createEventSchema } from "../validator/event.validator.js";
 
@@ -24,13 +23,6 @@ router.post(
   uploadEventImage,
   validate(createEventSchema),
   createEventController,
-);
-
-router.get(
-  "/organizer",
-  verifyToken(process.env.JWT_SECRET!),
-  checkRole("ORGANIZER"),
-  getOrganizerEventsController,
 );
 
 router.get("/categories", getEventCategoriesController);

@@ -51,7 +51,31 @@ export default function OrganizerTransactionsPage() {
   const pagination = data?.data.pagination;
 
   if (isPending) {
-    return <p>Memuat daftar transaksi...</p>;
+    return (
+      <main className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+        <div className="mx-auto max-w-7xl animate-pulse space-y-8">
+          <div className="space-y-3">
+            <div className="h-4 w-28 rounded bg-gray-200" />
+            <div className="h-9 w-64 max-w-full rounded-lg bg-gray-200" />
+            <div className="h-4 w-80 max-w-full rounded bg-gray-200" />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((item) => (
+              <div
+                key={item}
+                className="h-36 rounded-2xl border border-gray-200 bg-white"
+              />
+            ))}
+          </div>
+
+          <div className="h-64 rounded-2xl border border-gray-200 bg-white" />
+          <p className="text-center text-sm text-gray-500">
+            Menyiapkan transaksi kamu...
+          </p>
+        </div>
+      </main>
+    );
   }
 
   if (isError) {

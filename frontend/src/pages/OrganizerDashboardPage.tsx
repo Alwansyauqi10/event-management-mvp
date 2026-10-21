@@ -1,3 +1,4 @@
+import OrganizerStatisticsChart from "@/components/ui/OrganizerStatisticsChart";
 import { useOrganizerDashboard } from "@/hooks/useOrganizerDashboard";
 import { Link } from "react-router";
 
@@ -175,11 +176,6 @@ export default function OrganizerDashboardPage() {
 
         <header className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
-              ORGANIZER PANEL
-            </div>
-
             <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
               Dashboard Organizer
             </h1>
@@ -257,6 +253,10 @@ export default function OrganizerDashboardPage() {
             />
           </div>
         </section>
+        {/* Statistics Chart */}
+        <OrganizerStatisticsChart />
+
+        {/* Event Status */}
 
         {/* Event Status */}
         <section className="space-y-4">

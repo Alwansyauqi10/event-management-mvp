@@ -140,9 +140,74 @@ export type OrganizerEventsResponse = {
 export const getOrganizerEvents = async (
   params: { page?: number; limit?: number } = {},
 ): Promise<OrganizerEventsResponse> => {
-  const response = await api.get<OrganizerEventsResponse>("/events/organizer", {
+  const response = await api.get<OrganizerEventsResponse>("/organizer/events", {
     params,
   });
 
   return response.data;
+};
+
+export type OrganizerEventAttendee = {
+  userId: string;
+  name: string;
+  email: string;
+  ticketQuantity: number;
+  totalPaid: string;
+};
+
+export type OrganizerEventAttendeesResponse = {
+  event: {
+    id: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+  };
+  data: OrganizerEventAttendee[];
+  meta: {
+    totalAttendees: number;
+    totalTickets: number;
+    totalRevenue: string;
+  };
+};
+
+export const getOrganizerEventAttendees = async (
+  eventId: string,
+): Promise<OrganizerEventAttendeesResponse> => {
+  const response = await api.get<OrganizerEventAttendeesResponse>(
+    `/organizer/events/${eventId}/attendees`,
+  );
+
+  return response.data;
+};
+
+export type StatisticsPeriod = "daily" | "monthly" | "yearly";
+
+export type OrganizerStatisticsItem = {
+  date: string;
+  transactions: number;
+  revenue: string;
+};
+
+export type OrganizerStatisticsResponse = {
+  period: StatisticsPeriod;
+  year: number;
+  month?: number;
+  data: OrganizerStatisticsItem[];
+};
+
+export type GetOrganizerStatisticsParams = {
+  period: StatisticsPeriod;
+  year?: number;
+  month?: number;
+};
+
+export const getOrganizerStatistics = async (
+  params: GetOrganizerStatisticsParams,
+): Promise<OrganizerStatisticsResponse> => {
+  const response = await api.get<{
+    message: string;
+    data: OrganizerStatisticsResponse;
+  }>("/organizer/dashboard/statistics", { params });
+
+  return response.data.data;
 };

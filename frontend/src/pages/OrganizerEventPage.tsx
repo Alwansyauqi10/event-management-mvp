@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { getOrganizerEvents } from "../services/event.service";
 
@@ -46,6 +47,7 @@ export default function OrganizerEventsPage() {
                 <th className="p-4">Lokasi</th>
                 <th className="p-4">Status</th>
                 <th className="p-4">Transaksi</th>
+                <th className="p-4">Aksi</th>
               </tr>
             </thead>
 
@@ -53,14 +55,27 @@ export default function OrganizerEventsPage() {
               {events.map((event) => (
                 <tr key={event.id} className="border-t">
                   <td className="p-4 font-medium">{event.name}</td>
+
                   <td className="p-4">{event.category.name}</td>
+
                   <td className="p-4">{event.location}</td>
+
                   <td className="p-4">
                     <span className="rounded-full bg-gray-100 px-3 py-1">
                       {event.status}
                     </span>
                   </td>
+
                   <td className="p-4">{event._count.eventTransactions}</td>
+
+                  <td className="p-4">
+                    <Link
+                      to={`/organizer/events/${event.id}/attendees`}
+                      className="inline-block whitespace-nowrap rounded-lg bg-blue-600 px-3 py-2 text-white hover:bg-blue-700"
+                    >
+                      Lihat Peserta
+                    </Link>
+                  </td>
                 </tr>
               ))}
             </tbody>

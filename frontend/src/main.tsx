@@ -27,6 +27,7 @@ import OrganizerTransactionsPage from "./pages/OrganizerTransactionPage";
 
 import RoleProtectedRoute from "./components/RoleProtectedRoute";
 import OrganizerEventsPage from "./pages/OrganizerEventPage";
+import OrganizerEventAttendeesPage from "./pages/OrganizerEventAttendeesPage";
 
 const queryClient = new QueryClient();
 
@@ -108,6 +109,10 @@ const router = createBrowserRouter([
           {
             path: "/organizer/transactions/:transactionId",
             element: <OrganizerTransactionDetailPage />,
+          },
+          {
+            path: "/organizer/events/:eventId/attendees",
+            element: <OrganizerEventAttendeesPage />,
           },
         ],
       },

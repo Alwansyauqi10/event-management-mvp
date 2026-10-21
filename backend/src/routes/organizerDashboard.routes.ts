@@ -3,9 +3,12 @@ import { checkRole } from "../middleware/role.middleware.js";
 import { verifyToken } from "../middleware/auth.middleware.js";
 import {
   acceptOrganizerTransactionController,
+  getOrganizerEventAttendeesController,
+  getOrganizerEventsController,
   getOrganizerTransactionDetailController,
   getOrganizerTransactionsController,
   organizerDashboardController,
+  organizerDashboardStatisticsController,
   rejectOrganizerTransactionController,
 } from "../controllers/organizerDashboard.controller.js";
 
@@ -40,5 +43,24 @@ organizerRouter.put(
   verifyToken(process.env.JWT_SECRET!),
   checkRole("ORGANIZER"),
   rejectOrganizerTransactionController,
+);
+organizerRouter.get(
+  "/events",
+  verifyToken(process.env.JWT_SECRET!),
+  checkRole("ORGANIZER"),
+  getOrganizerEventsController,
+);
+
+organizerRouter.get(
+  "/events/:eventId/attendees",
+  verifyToken(process.env.JWT_SECRET!),
+  checkRole("ORGANIZER"),
+  getOrganizerEventAttendeesController,
+);
+organizerRouter.get(
+  "/dashboard/statistics",
+  verifyToken(process.env.JWT_SECRET!),
+  checkRole("ORGANIZER"),
+  organizerDashboardStatisticsController,
 );
 export default organizerRouter;

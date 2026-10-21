@@ -1,14 +1,10 @@
-import {
-  FaInstagram,
-  FaYoutube,
-  FaLinkedinIn,
-} from "react-icons/fa6";
+import { FaInstagram, FaYoutube, FaLinkedinIn } from "react-icons/fa6";
 
 import { Mail } from "lucide-react";
 
 function Footer() {
   return (
-    <footer className="bg-haya-navy text-white">
+    <footer className="bg-haya-navy text-white grow">
       <div className="mx-auto max-w-7xl px-6 py-7">
         {/* Top */}
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
@@ -25,22 +21,13 @@ function Footer() {
 
           {/* Navigation */}
           <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 font-manrope text-sm text-white/60">
-            <a
-              href="/events"
-              className="transition hover:text-white"
-            >
+            <a href="/events" className="transition hover:text-white">
               Events
             </a>
-            <a
-              href="/categories"
-              className="transition hover:text-white"
-            >
+            <a href="/categories" className="transition hover:text-white">
               Categories
             </a>
-            <a
-              href="/about"
-              className="transition hover:text-white"
-            >
+            <a href="/" className="transition hover:text-white">
               About
             </a>
           </nav>
@@ -87,9 +74,7 @@ function Footer() {
             © 2026 HAYA. All rights reserved.
           </p>
 
-          <p className="font-manrope text-xs text-white/40">
-            Indonesia
-          </p>
+          <p className="font-manrope text-xs text-white/40">Indonesia</p>
         </div>
       </div>
     </footer>

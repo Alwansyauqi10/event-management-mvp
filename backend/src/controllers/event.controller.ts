@@ -1,15 +1,13 @@
 import { Request, Response } from "express";
-import {
-  getEventsService,
-  getEventLocationsService,
-  getEventByIdService,
-  getEventTicketsService,
-  getEventCategoriesService,
-  getOrganizerEventsService,
-} from "../services/event.service.js";
-import { prisma } from "../lib/prisma.js";
-import { createEventService } from "../services/event.service.js";
 import { cloudinary } from "../lib/cloudinary.js";
+import {
+  createEventService,
+  getEventByIdService,
+  getEventCategoriesService,
+  getEventLocationsService,
+  getEventsService,
+  getEventTicketsService,
+} from "../services/event.service.js";
 
 export const getEventsController = async (req: Request, res: Response) => {
   try {
@@ -334,77 +332,6 @@ export const createEventController = async (req: Request, res: Response) => {
 
     res.status(400).json({
       message: error instanceof Error ? error.message : "Gagal membuat event",
-    });
-  }
-};
-
-export const getOrganizerEventsController = async (
-  req: Request,
-  res: Response,
-) => {
-  try {
-    const organizerId = res.locals.user?.id;
-
-    if (!organizerId) {
-      res.status(401).json({
-        message: "Silakan login terlebih dahulu",
-      });
-      return;
-    }
-
-    const page =
-      typeof req.query.page === "string" ? Number(req.query.page) : 1;
-
-    const limit =
-      typeof req.query.limit === "string" ? Number(req.query.limit) : 8;
-
-    if (
-      !Number.isSafeInteger(page) ||
-      page < 1 ||
-      !Number.isSafeInteger(limit) ||
-      limit < 1 ||
-      limit > 100
-    ) {
-      res.status(400).json({
-        message: "Parameter page atau limit tidak valid",
-      });
-      return;
-    }
-
-    const result = await getOrganizerEventsService(
-      BigInt(organizerId),
-      page,
-      limit,
-    );
-
-    const serializedEvents = result.events.map((event) => ({
-      ...event,
-      id: event.id.toString(),
-      organizerId: event.organizerId.toString(),
-      categoryId: event.categoryId.toString(),
-      category: {
-        ...event.category,
-        id: event.category.id.toString(),
-      },
-      _count: {
-        eventTransactions: event._count.eventTransactions,
-      },
-    }));
-
-    res.status(200).json({
-      data: serializedEvents,
-      meta: {
-        page: result.page,
-        limit: result.limit,
-        total: result.total,
-        totalPages: result.totalPages,
-      },
-    });
-  } catch (error) {
-    console.error("Get organizer events error:", error);
-
-    res.status(500).json({
-      message: "Gagal mengambil event organizer",
     });
   }
 };

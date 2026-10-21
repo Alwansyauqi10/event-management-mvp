@@ -29,6 +29,7 @@ import RoleProtectedRoute from "./components/RoleProtectedRoute";
 import OrganizerEventsPage from "./pages/OrganizerEventPage";
 import OrganizerEventAttendeesPage from "./pages/OrganizerEventAttendeesPage";
 import EditEventPage from "./pages/EditEventPage";
+import CheckoutPage from "./pages/CheckoutPage";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +63,10 @@ const router = createBrowserRouter([
       {
         element: <RoleProtectedRoute allowedRole="CUSTOMER" />,
         children: [
+          {
+            path: "/checkout",
+            element: <CheckoutPage />,
+          },
           {
             path: "/profile",
             element: <ProfilePage />,

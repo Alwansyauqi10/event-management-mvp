@@ -19,6 +19,7 @@ export const useRegister = () => {
         email: data.email,
         phone: data.phone,
         password: data.password,
+        role: data.role,
         ...(data.referralCode?.trim()
           ? { referralCode: data.referralCode.trim() }
           : {}),

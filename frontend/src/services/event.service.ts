@@ -18,6 +18,7 @@ export type Event = {
   startDate: string;
   endDate: string;
   availableSeats: number;
+  tickets?: Ticket[];
   status: string;
   image: string | null;
   category: {
@@ -210,4 +211,49 @@ export const getOrganizerStatistics = async (
   }>("/organizer/dashboard/statistics", { params });
 
   return response.data.data;
+};
+export const deleteOrganizerEvent = async (eventId: string) => {
+  const response = await api.delete(`/events/organizer/${eventId}`);
+
+  return response.data;
+};
+
+export type UpdateEventTicket = {
+  id?: string;
+  name: string;
+  price: string;
+  quantity: number;
+};
+
+export type UpdateEventPayload = {
+  name: string;
+  categoryId: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+  tickets: UpdateEventTicket[];
+  image?: File;
+};
+export const updateOrganizerEvent = async (
+  eventId: string,
+  payload: UpdateEventPayload,
+) => {
+  const formData = new FormData();
+
+  formData.append("name", payload.name);
+  formData.append("categoryId", payload.categoryId);
+  formData.append("location", payload.location);
+  formData.append("startDate", payload.startDate);
+  formData.append("endDate", payload.endDate);
+  formData.append("description", payload.description);
+  formData.append("tickets", JSON.stringify(payload.tickets));
+
+  if (payload.image) {
+    formData.append("image", payload.image);
+  }
+
+  const response = await api.patch(`/events/organizer/${eventId}`, formData);
+
+  return response.data;
 };

@@ -1,13 +1,16 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { cloudinary } from "../lib/cloudinary.js";
 import {
   createEventService,
+  deleteEventService,
   getEventByIdService,
   getEventCategoriesService,
   getEventLocationsService,
   getEventsService,
   getEventTicketsService,
+  updateEventService,
 } from "../services/event.service.js";
+import { ApiError } from "../utils/api-error.js";
 
 export const getEventsController = async (req: Request, res: Response) => {
   try {
@@ -115,6 +118,12 @@ export const getEventByIdController = async (req: Request, res: Response) => {
         ...event.category,
         id: event.category.id.toString(),
       },
+      tickets: event.tickets.map((ticket) => ({
+        ...ticket,
+        id: ticket.id.toString(),
+        eventId: ticket.eventId.toString(),
+        price: ticket.price.toString(),
+      })),
     };
 
     res.status(200).json({
@@ -333,5 +342,109 @@ export const createEventController = async (req: Request, res: Response) => {
     res.status(400).json({
       message: error instanceof Error ? error.message : "Gagal membuat event",
     });
+  }
+};
+
+export const updateEventController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const eventId = Array.isArray(req.params.eventId)
+      ? req.params.eventId[0]
+      : req.params.eventId;
+    const organizerId = res.locals.user?.id;
+
+    if (!eventId || !/^\d+$/.test(eventId)) {
+      throw new ApiError("ID event tidak valid", 400);
+    }
+
+    if (!organizerId) {
+      throw new ApiError("User tidak ditemukan", 401);
+    }
+
+    const tickets = JSON.parse(req.body.tickets);
+
+    let imageUrl: string | undefined = undefined;
+
+    if (req.file) {
+      imageUrl = await new Promise<string>((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            folder: "event-management/events",
+            resource_type: "image",
+          },
+          (error, result) => {
+            if (error) {
+              reject(error);
+              return;
+            }
+
+            if (!result) {
+              reject(new Error("Upload poster gagal"));
+              return;
+            }
+
+            resolve(result.secure_url);
+          },
+        );
+
+        stream.end(req.file!.buffer);
+      });
+    }
+    const event = await updateEventService({
+      eventId: BigInt(eventId),
+      organizerId: BigInt(organizerId),
+      name: req.body.name,
+      categoryId: req.body.categoryId,
+      location: req.body.location,
+      startDate: req.body.startDate,
+      endDate: req.body.endDate,
+      description: req.body.description,
+      tickets,
+      image: imageUrl,
+    });
+
+    res.status(200).json({
+      message: "Event berhasil diperbarui",
+      data: JSON.parse(
+        JSON.stringify(event, (_key, value) =>
+          typeof value === "bigint" ? value.toString() : value,
+        ),
+      ),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteEventController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const eventId = Array.isArray(req.params.eventId)
+      ? req.params.eventId[0]
+      : req.params.eventId;
+    const organizerId = res.locals.user?.id;
+
+    if (!eventId || !/^\d+$/.test(eventId)) {
+      throw new ApiError("ID event tidak valid", 400);
+    }
+
+    if (!organizerId) {
+      throw new ApiError("User tidak ditemukan", 401);
+    }
+
+    const result = await deleteEventService(
+      BigInt(organizerId),
+      BigInt(eventId),
+    );
+
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
   }
 };

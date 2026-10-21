@@ -11,6 +11,9 @@ function RegisterPage() {
     formState: { errors },
   } = useForm<RegisterSchema>({
     resolver: zodResolver(registerSchema),
+    defaultValues: {
+      role: "CUSTOMER",
+    },
   });
   const { mutate, isPending } = useRegister();
   const handleRegister = (values: RegisterSchema) => {

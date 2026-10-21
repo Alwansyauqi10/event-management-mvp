@@ -41,7 +41,10 @@ export default function OrganizerLayout() {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === "/organizer/dashboard"}
+              end={
+                item.to === "/organizer/dashboard" ||
+                item.to === "/organizer/events"
+              }
               className={({ isActive }) =>
                 `shrink-0 rounded-lg px-4 py-3 text-sm font-medium transition ${
                   isActive

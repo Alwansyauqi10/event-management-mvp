@@ -28,6 +28,7 @@ import OrganizerTransactionsPage from "./pages/OrganizerTransactionPage";
 import RoleProtectedRoute from "./components/RoleProtectedRoute";
 import OrganizerEventsPage from "./pages/OrganizerEventPage";
 import OrganizerEventAttendeesPage from "./pages/OrganizerEventAttendeesPage";
+import EditEventPage from "./pages/EditEventPage";
 
 const queryClient = new QueryClient();
 
@@ -50,17 +51,12 @@ const router = createBrowserRouter([
     element: <ResetPasswordPage />,
   },
 
-  // Halaman publik dan fitur khusus CUSTOMER
   {
     element: <MainLayout />,
     children: [
       {
         path: "/",
         element: <Home />,
-      },
-      {
-        path: "/events/:id",
-        element: <EventDetailPage />,
       },
 
       {
@@ -74,12 +70,15 @@ const router = createBrowserRouter([
             path: "/profile/points",
             element: <PointHistoryPage />,
           },
+          {
+            path: "/events/:id",
+            element: <EventDetailPage />,
+          },
         ],
       },
     ],
   },
 
-  // Seluruh halaman organizer dilindungi role ORGANIZER
   {
     element: <RoleProtectedRoute allowedRole="ORGANIZER" />,
     children: [
@@ -113,6 +112,10 @@ const router = createBrowserRouter([
           {
             path: "/organizer/events/:eventId/attendees",
             element: <OrganizerEventAttendeesPage />,
+          },
+          {
+            path: "/organizer/events/:eventId/edit",
+            element: <EditEventPage />,
           },
         ],
       },

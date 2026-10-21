@@ -1,11 +1,11 @@
-
 import { useState } from "react";
-import { useParams } from "react-router";
+import { useParams, useNavigate } from "react-router";
 import { useEventById } from "@/hooks/useEvent";
 import { useEventTickets } from "@/hooks/useEventTickets";
 
 function EventDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const eventId = id ?? "";
 
   const [quantities, setQuantities] = useState<Record<string, number>>({});
@@ -385,9 +385,7 @@ function EventDetailPage() {
                   </div>
 
                   <div className="mt-4">
-                    <p className="text-sm text-slate-600">
-                      Estimated subtotal
-                    </p>
+                    <p className="text-sm text-slate-600">Estimated subtotal</p>
                     <p className="mt-1 wrap-break-word text-2xl font-bold tracking-tight text-slate-900">
                       {formatPrice(subtotal)}
                     </p>
@@ -397,7 +395,23 @@ function EventDetailPage() {
                     type="button"
                     disabled={totalQuantity === 0}
                     onClick={() => {
-                      // Checkout will be implemented in the next feature.
+                      navigate("/checkout", {
+                        state: {
+                          event: {
+                            id: event.id,
+                            name: event.name,
+                            image: event.image,
+                            location: event.location,
+                            startDate: event.startDate,
+                          },
+                          tickets: selectedTickets.map((ticket) => ({
+                            id: ticket.id,
+                            name: ticket.name,
+                            price: ticket.price,
+                            quantity: quantities[ticket.id] ?? 0,
+                          })),
+                        },
+                      });
                     }}
                     className="mt-6 w-full rounded-xl bg-blue-600 px-5 py-3.5 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                   >
@@ -405,8 +419,8 @@ function EventDetailPage() {
                   </button>
 
                   <p className="mt-4 text-xs leading-5 text-slate-500">
-                    Your selection is temporary. Tickets are not reserved
-                    until checkout is implemented.
+                    Your selection is temporary. Tickets are not reserved until
+                    checkout is implemented.
                   </p>
                 </div>
 

@@ -20,6 +20,7 @@ import RoleProtectedRoute from "./components/RoleProtectedRoute";
 import OrganizerTransactionsPage from "./pages/OrganizerTransactionPage";
 import OrganizerTransactionDetailPage from "./pages/OrganizerTransactionDetailPage";
 import CreateEventPage from "./pages/CreateEventPage";
+import CheckoutPage from "./pages/CheckoutPage";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,10 @@ const router = createBrowserRouter([
       {
         element: <ProtectedRoute />,
         children: [
+          {
+            path: "/checkout",
+            element: <CheckoutPage />,
+          },
           {
             path: "/profile",
             element: <ProfilePage />,

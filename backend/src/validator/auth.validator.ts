@@ -14,6 +14,7 @@ export const registerSchema = z.object({
     }),
   phone: z.string().min(1, "Phone wajib diisi"),
   referralCode: z.string().trim().optional(),
+  role: z.enum(["CUSTOMER", "ORGANIZER"]),
 });
 
 export const loginSchema = z.object({

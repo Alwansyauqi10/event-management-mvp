@@ -6,6 +6,7 @@ import {
   RejectTransactionParams,
 } from "../types/organizerDashboard.js";
 import { ApiError } from "../utils/api-error.js";
+import { sendTransactionStatusEmail } from "../utils/transaction-email.js";
 
 export const organizerDashboardService = async (userId: string) => {
   const organizerId = BigInt(userId);
@@ -313,7 +314,7 @@ export const acceptOrganizerTransactionService = async ({
   const organizerId = BigInt(userId);
   const id = BigInt(transactionId);
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const transaction = await tx.eventTransaction.findFirst({
       where: {
         id,
@@ -324,7 +325,20 @@ export const acceptOrganizerTransactionService = async ({
       },
       select: {
         id: true,
+        userId: true,
+        transactionCode: true,
         status: true,
+        user: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+        event: {
+          select: {
+            name: true,
+          },
+        },
       },
     });
 
@@ -360,11 +374,42 @@ export const acceptOrganizerTransactionService = async ({
       );
     }
 
+    await tx.notification.create({
+      data: {
+        userId: transaction.userId,
+        transactionId: transaction.id,
+        type: "TRANSACTION_ACCEPTED",
+        title: "Transaksi Diterima",
+        message: `Transaksi ${transaction.transactionCode} untuk acara ${transaction.event.name} telah diterima.`,
+      },
+    });
+
     return {
       id: transaction.id.toString(),
       status: "DONE" as const,
+      email: transaction.user.email,
+      customerName: transaction.user.name,
+      eventName: transaction.event.name,
+      transactionCode: transaction.transactionCode,
     };
   });
+
+  try {
+    await sendTransactionStatusEmail({
+      to: result.email,
+      customerName: result.customerName,
+      eventName: result.eventName,
+      transactionCode: result.transactionCode,
+      status: result.status,
+    });
+  } catch (error) {
+    console.error("Gagal mengirim email transaksi diterima:", error);
+  }
+
+  return {
+    id: result.id,
+    status: result.status,
+  };
 };
 
 export const rejectOrganizerTransactionService = async ({
@@ -378,7 +423,7 @@ export const rejectOrganizerTransactionService = async ({
   const organizerId = BigInt(userId);
   const id = BigInt(transactionId);
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const transaction = await tx.eventTransaction.findFirst({
       where: {
         id,
@@ -389,7 +434,20 @@ export const rejectOrganizerTransactionService = async ({
       },
       select: {
         id: true,
+        userId: true,
+        transactionCode: true,
         status: true,
+        user: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+        event: {
+          select: {
+            name: true,
+          },
+        },
       },
     });
 
@@ -425,9 +483,324 @@ export const rejectOrganizerTransactionService = async ({
       );
     }
 
+    await tx.notification.create({
+      data: {
+        userId: transaction.userId,
+        transactionId: transaction.id,
+        type: "TRANSACTION_REJECTED",
+        title: "Transaksi Ditolak",
+        message: `Transaksi ${transaction.transactionCode} untuk acara ${transaction.event.name} telah ditolak.`,
+      },
+    });
+
     return {
       id: transaction.id.toString(),
       status: "REJECTED" as const,
+      email: transaction.user.email,
+      customerName: transaction.user.name,
+      eventName: transaction.event.name,
+      transactionCode: transaction.transactionCode,
     };
   });
+
+  try {
+    await sendTransactionStatusEmail({
+      to: result.email,
+      customerName: result.customerName,
+      eventName: result.eventName,
+      transactionCode: result.transactionCode,
+      status: result.status,
+    });
+  } catch (error) {
+    console.error("Gagal mengirim email transaksi ditolak:", error);
+  }
+
+  return {
+    id: result.id,
+    status: result.status,
+  };
+};
+export const getOrganizerEventsService = async (
+  organizerId: bigint,
+  page: number,
+  limit: number,
+) => {
+  const where = {
+    organizerId,
+    deletedAt: null,
+  };
+
+  const [events, total] = await Promise.all([
+    prisma.event.findMany({
+      where,
+      include: {
+        category: true,
+        _count: {
+          select: {
+            eventTransactions: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+
+    prisma.event.count({ where }),
+  ]);
+
+  return {
+    events,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
+};
+
+export const getOrganizerEventAttendeesService = async (
+  organizerId: bigint,
+  eventId: bigint,
+) => {
+  // Pastikan event memang milik organizer yang login.
+  const event = await prisma.event.findFirst({
+    where: {
+      id: eventId,
+      organizerId,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      name: true,
+      startDate: true,
+      endDate: true,
+    },
+  });
+
+  if (!event) {
+    return null;
+  }
+
+  // Ambil transaksi yang sudah dikonfirmasi selesai.
+  const transactions = await prisma.eventTransaction.findMany({
+    where: {
+      eventId,
+      status: "DONE",
+      user: {
+        deletedAt: null,
+      },
+    },
+    select: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      totalAmount: true,
+      items: {
+        select: {
+          quantity: true,
+        },
+      },
+    },
+  });
+
+  // Gabungkan beberapa transaksi dari customer yang sama.
+  const attendeesMap = new Map<
+    string,
+    {
+      userId: string;
+      name: string;
+      email: string;
+      ticketQuantity: number;
+      totalPaid: bigint;
+    }
+  >();
+
+  for (const transaction of transactions) {
+    const userId = transaction.user.id.toString();
+    const existing = attendeesMap.get(userId);
+
+    const ticketQuantity = transaction.items.reduce(
+      (total, item) => total + item.quantity,
+      0,
+    );
+
+    if (existing) {
+      existing.ticketQuantity += ticketQuantity;
+      existing.totalPaid += transaction.totalAmount;
+    } else {
+      attendeesMap.set(userId, {
+        userId,
+        name: transaction.user.name,
+        email: transaction.user.email,
+        ticketQuantity,
+        totalPaid: transaction.totalAmount,
+      });
+    }
+  }
+
+  const attendees = Array.from(attendeesMap.values()).map((attendee) => ({
+    ...attendee,
+    totalPaid: attendee.totalPaid.toString(),
+  }));
+
+  return {
+    event: {
+      ...event,
+      id: event.id.toString(),
+    },
+    data: attendees,
+    meta: {
+      totalAttendees: attendees.length,
+      totalTickets: attendees.reduce(
+        (total, attendee) => total + attendee.ticketQuantity,
+        0,
+      ),
+      totalRevenue: attendees
+        .reduce((total, attendee) => total + BigInt(attendee.totalPaid), 0n)
+        .toString(),
+    },
+  };
+};
+
+type StatisticsPeriod = "daily" | "monthly" | "yearly";
+
+type OrganizerStatisticsParams = {
+  period: StatisticsPeriod;
+  year?: number;
+  month?: number;
+};
+
+export const organizerDashboardStatisticsService = async (
+  userId: string,
+  params: OrganizerStatisticsParams,
+) => {
+  const organizerId = BigInt(userId);
+  const now = new Date();
+
+  const year = params.year ?? now.getUTCFullYear();
+  const month = params.month ?? now.getUTCMonth() + 1;
+
+  if (
+    !Number.isInteger(year) ||
+    year < 2000 ||
+    year > 9999 ||
+    !Number.isInteger(month) ||
+    month < 1 ||
+    month > 12
+  ) {
+    throw new Error("Tahun atau bulan tidak valid");
+  }
+
+  const where: {
+    event: {
+      organizerId: bigint;
+      deletedAt: null;
+    };
+    createdAt?: {
+      gte: Date;
+      lt: Date;
+    };
+  } = {
+    event: {
+      organizerId,
+      deletedAt: null,
+    },
+  };
+
+  if (params.period === "daily") {
+    where.createdAt = {
+      gte: new Date(Date.UTC(year, month - 1, 1)),
+      lt: new Date(Date.UTC(year, month, 1)),
+    };
+  } else if (params.period === "monthly") {
+    where.createdAt = {
+      gte: new Date(Date.UTC(year, 0, 1)),
+      lt: new Date(Date.UTC(year + 1, 0, 1)),
+    };
+  }
+
+  const transactions = await prisma.eventTransaction.findMany({
+    where,
+    select: {
+      createdAt: true,
+      status: true,
+      totalAmount: true,
+    },
+  });
+
+  const statistics = new Map<
+    string,
+    { transactions: number; revenue: bigint }
+  >();
+
+  const getKey = (date: Date) => {
+    const y = date.getUTCFullYear();
+    const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(date.getUTCDate()).padStart(2, "0");
+
+    if (params.period === "daily") return `${y}-${m}-${d}`;
+    if (params.period === "monthly") return `${y}-${m}`;
+    return String(y);
+  };
+
+  for (const transaction of transactions) {
+    const key = getKey(transaction.createdAt);
+    const current = statistics.get(key) ?? {
+      transactions: 0,
+      revenue: 0n,
+    };
+
+    current.transactions += 1;
+
+    if (transaction.status === "DONE") {
+      current.revenue += transaction.totalAmount;
+    }
+
+    statistics.set(key, current);
+  }
+
+  // Siapkan seluruh hari dalam bulan yang dipilih.
+  if (params.period === "daily") {
+    const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const key = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+      if (!statistics.has(key)) {
+        statistics.set(key, { transactions: 0, revenue: 0n });
+      }
+    }
+  }
+
+  // Siapkan seluruh bulan dalam tahun yang dipilih.
+  if (params.period === "monthly") {
+    for (let m = 1; m <= 12; m++) {
+      const key = `${year}-${String(m).padStart(2, "0")}`;
+
+      if (!statistics.has(key)) {
+        statistics.set(key, { transactions: 0, revenue: 0n });
+      }
+    }
+  }
+
+  const sortedStatistics = [...statistics.entries()].sort(([a], [b]) =>
+    a.localeCompare(b),
+  );
+
+  return {
+    period: params.period,
+    year,
+    ...(params.period === "daily" ? { month } : {}),
+    data: sortedStatistics.map(([date, value]) => ({
+      date,
+      transactions: value.transactions,
+      revenue: value.revenue.toString(),
+    })),
+  };
 };

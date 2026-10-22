@@ -10,7 +10,7 @@ export const CHECKOUT_CONFIG = {
   MAX_TOTAL_DISCOUNT_PERCENT: 100,
 
   // Tenggat pembayaran setelah transaksi dibuat
-  PAYMENT_EXPIRY_MINUTES: 15,
+  PAYMENT_EXPIRY_MINUTES: 1,
 
   // Tenggat konfirmasi organizer setelah bukti pembayaran diunggah
   ADMIN_CONFIRMATION_HOURS: 24,

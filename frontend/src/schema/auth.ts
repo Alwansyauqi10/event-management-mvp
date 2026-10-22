@@ -13,6 +13,7 @@ export const registerSchema = z.object({
       message: "Must containt at least code one special character",
     }),
   phone: z.string().min(1, "Phone wajib diisi"),
+  role: z.enum(["CUSTOMER", "ORGANIZER"]),
   referralCode: z.string().trim().optional(),
 });
 

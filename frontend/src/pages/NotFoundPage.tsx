@@ -1,5 +1,3 @@
-import { Link } from "react-router";
-
 function NotFoundPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-4 text-center">
@@ -25,13 +23,6 @@ function NotFoundPage() {
 
       {/* Tombol Navigasi Kembali */}
       <div className="mt-8 flex gap-4">
-        <Link
-          to="/"
-          className="px-6 py-3 text-sm font-medium text-white bg-indigo-600 rounded-lg shadow-md hover:bg-indigo-700 transition duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-        >
-          Kembali ke Beranda
-        </Link>
-
         <button
           onClick={() => window.history.back()}
           className="px-6 py-3 text-sm font-medium text-indigo-600 bg-white border border-indigo-600 rounded-lg shadow-sm hover:bg-indigo-50 transition duration-200"

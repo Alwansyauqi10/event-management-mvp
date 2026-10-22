@@ -19,6 +19,7 @@ export const useRegister = () => {
         email: data.email,
         phone: data.phone,
         password: data.password,
+        role: data.role,
         ...(data.referralCode?.trim()
           ? { referralCode: data.referralCode.trim() }
           : {}),
@@ -49,11 +50,9 @@ export const useLogin = () => {
       localStorage.setItem("accessToken", data.accessToken);
       toast.success("Login success!");
       if (data.user.role === "CUSTOMER") {
-        navigate("/profile");
+        navigate("/");
       } else if (data.user.role === "ORGANIZER") {
         navigate("/organizer/dashboard");
-      } else {
-        navigate("/");
       }
     },
     onError: (error: AxiosError<{ message: string }>) => {

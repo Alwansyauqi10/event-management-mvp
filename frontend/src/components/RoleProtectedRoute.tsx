@@ -24,7 +24,11 @@ export default function RoleProtectedRoute({
   }
 
   if (user.role !== allowedRole) {
-    return <Navigate to="/" replace />;
+    if (user.role === "CUSTOMER") {
+      return <Navigate to="/" replace />;
+    } else {
+      return <Navigate to="/organizer/dashboard" replace />;
+    }
   }
 
   return <Outlet />;

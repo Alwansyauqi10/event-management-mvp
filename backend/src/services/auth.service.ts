@@ -54,6 +54,7 @@ export const registerService = async (body: RegisterSchema) => {
         email: body.email,
         password: hashedPassword,
         phone: body.phone,
+        role: body.role,
         referralCode: `REF-${randomUUID()}`,
       },
     });

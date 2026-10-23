@@ -1,5 +1,6 @@
 
-import { v2 as cloudinary } from "cloudinary";
+// import { v2 as cloudinary } from "cloudinary";
+import { cloudinary } from "../lib/cloudinary.js";
 import { prisma } from "../lib/prisma.js";
 import { ApiError } from "../utils/api-error.js";
 import { CHECKOUT_CONFIG } from "../config/checkout.config.js";

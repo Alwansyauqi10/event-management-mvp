@@ -33,8 +33,6 @@ import CheckoutPage from "./pages/CheckoutPage";
 import PaymentPage from "./pages/PaymentPage";
 import TransactionHistoryPage from "./pages/TransactionHistoryPage";
 import CheckInPage from "./pages/CheckInPage";
-import PaymentPage from "./pages/PaymentPage";
-import TransactionHistoryPage from "./pages/TransactionHistoryPage";
 
 const queryClient = new QueryClient();
 

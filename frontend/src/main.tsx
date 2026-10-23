@@ -30,6 +30,8 @@ import OrganizerEventsPage from "./pages/OrganizerEventPage";
 import OrganizerEventAttendeesPage from "./pages/OrganizerEventAttendeesPage";
 import EditEventPage from "./pages/EditEventPage";
 import CheckoutPage from "./pages/CheckoutPage";
+import PaymentPage from "./pages/PaymentPage";
+import TransactionHistoryPage from "./pages/TransactionHistoryPage";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +80,14 @@ const router = createBrowserRouter([
           {
             path: "/events/:id",
             element: <EventDetailPage />,
+          },
+          {
+            path: "/payment/:transactionId",
+            element: <PaymentPage />,
+          },
+          {
+            path: "/transaction/history",
+            element: <TransactionHistoryPage />,
           },
         ],
       },

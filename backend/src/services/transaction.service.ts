@@ -241,3 +241,96 @@ export const createTransactionService = async (
     };
   });
 };
+
+export const getCustomerTransactionStatusService = async ({
+  userId,
+  transactionId,
+}: {
+  userId: string;
+  transactionId: string;
+}) => {
+  if (!/^[1-9]\d*$/.test(transactionId)) {
+    throw new ApiError("ID transaksi tidak valid", 400);
+  }
+
+  const transaction = await prisma.eventTransaction.findFirst({
+    where: {
+      id: BigInt(transactionId),
+      userId: BigInt(userId),
+    },
+    select: {
+      id: true,
+      transactionCode: true,
+      status: true,
+      paymentProofDeadline: true,
+    },
+  });
+
+  if (!transaction) {
+    throw new ApiError("Transaksi tidak ditemukan", 404);
+  }
+
+  return {
+    ...transaction,
+    id: transaction.id.toString(),
+  };
+};
+
+
+export const getMyTransactionsService = async (userId: string) => {
+  const transactions = await prisma.eventTransaction.findMany({
+    where: {
+      userId: BigInt(userId),
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    select: {
+      id: true,
+      transactionCode: true,
+      status: true,
+      totalAmount: true,
+      createdAt: true,
+      paymentProofDeadline: true,
+      event: {
+        select: {
+          id: true,
+          name: true,
+          startDate: true,
+          location: true,
+        },
+      },
+      items: {
+        select: {
+          ticketId: true,
+          price: true,
+          quantity: true,
+          subTotal: true,
+          ticket: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return transactions.map((transaction) => ({
+    ...transaction,
+    id: transaction.id.toString(),
+    totalAmount: transaction.totalAmount.toString(),
+    event: {
+      ...transaction.event,
+      id: transaction.event.id.toString(),
+    },
+    items: transaction.items.map((item) => ({
+      ...item,
+      ticketId: item.ticketId.toString(),
+      price: item.price.toString(),
+      subTotal: item.subTotal.toString(),
+    })),
+  }));
+};
+
+

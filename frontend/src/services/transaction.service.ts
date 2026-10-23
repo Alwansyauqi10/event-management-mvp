@@ -95,8 +95,6 @@ export const getTransactionStatus = async (
   return response.data.data;
 };
 
-
-
 export interface MyTransactionItem {
   ticketId: string;
   price: string;

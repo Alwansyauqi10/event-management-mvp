@@ -32,6 +32,7 @@ import EditEventPage from "./pages/EditEventPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import PaymentPage from "./pages/PaymentPage";
 import TransactionHistoryPage from "./pages/TransactionHistoryPage";
+import CheckInPage from "./pages/CheckInPage";
 
 const queryClient = new QueryClient();
 
@@ -127,6 +128,10 @@ const router = createBrowserRouter([
           {
             path: "/organizer/events/:eventId/attendees",
             element: <OrganizerEventAttendeesPage />,
+          },
+          {
+            path: "/organizer/events/:eventId/check-in",
+            element: <CheckInPage />,
           },
           {
             path: "/organizer/events/:eventId/edit",

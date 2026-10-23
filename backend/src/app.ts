@@ -9,6 +9,7 @@ import organizerRouter from "./routes/organizerDashboard.routes.js";
 import transactionRouter from "./routes/transaction.routes.js";
 import paymentProofRouter from "./routes/payment-proof.routes.js";
 import checkInRouter from "./routes/checkIn.routes.js";
+import paymentProofRouter from "./routes/payment-proof.routes.js";
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use("/transactions", transactionRouter);
 app.use("/transactions", paymentProofRouter);
 app.use("/organizer", organizerRouter);
 app.use("/organizer", checkInRouter);
+app.use("/transactions", paymentProofRouter);
 
 app.get("/", (req, res) => {
   res.json({ message: "Event Management API is running" });

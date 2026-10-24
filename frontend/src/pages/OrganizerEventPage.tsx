@@ -99,6 +99,12 @@ export default function OrganizerEventsPage() {
                         Check-in
                       </Link>
                       <Link
+                        to={`/organizer/events/${event.id}/review`}
+                        className="whitespace-nowrap rounded-lg bg-gray-700 px-3 py-2 text-white hover:bg-gray-900"
+                      >
+                        Review & Rating
+                      </Link>
+                      <Link
                         to={`/organizer/events/${event.id}/edit`}
                         className="whitespace-nowrap rounded-lg bg-amber-500 px-3 py-2 text-white hover:bg-amber-600"
                       >

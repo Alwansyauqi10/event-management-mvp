@@ -20,6 +20,13 @@ export const getCheckInAttendeesService = async (
     select: {
       id: true,
       name: true,
+      categoryId: true,
+      category: {
+        select: {
+          name: true,
+        },
+      },
+      location: true,
       startDate: true,
       endDate: true,
     },
@@ -65,8 +72,13 @@ export const getCheckInAttendeesService = async (
 
   return {
     event: {
-      ...event,
       id: event.id.toString(),
+      name: event.name,
+      categoryId: event.categoryId.toString(),
+      category: event.category,
+      location: event.location,
+      startDate: event.startDate.toISOString(),
+      endDate: event.endDate.toISOString(),
     },
     data: transactions.map((transaction) => ({
       transactionId: transaction.id.toString(),

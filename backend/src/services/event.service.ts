@@ -201,6 +201,7 @@ export const createEventService = async (input: CreateEventInput) => {
     });
   });
 };
+
 type UpdateEventInput = {
   organizerId: bigint;
   eventId: bigint;

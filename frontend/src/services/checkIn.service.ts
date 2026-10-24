@@ -13,8 +13,13 @@ export interface CheckInAttendee {
 export interface CheckInEvent {
   id: string;
   name: string;
+  location: string | null;
   startDate: string;
   endDate: string;
+  categoryId: string | number;
+  category: {
+    name: string;
+  } | null;
 }
 
 export interface CheckInAttendeesResponse {

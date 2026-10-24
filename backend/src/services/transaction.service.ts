@@ -277,6 +277,7 @@ export const getCustomerTransactionStatusService = async ({
 };
 
 
+
 export const getMyTransactionsService = async (userId: string) => {
   const transactions = await prisma.eventTransaction.findMany({
     where: {
@@ -292,6 +293,15 @@ export const getMyTransactionsService = async (userId: string) => {
       totalAmount: true,
       createdAt: true,
       paymentProofDeadline: true,
+      checkedInAt: true,
+      review: {
+        select: {
+          id: true,
+          rating: true,
+          comment: true,
+          createdAt: true,
+        },
+      },
       event: {
         select: {
           id: true,
@@ -320,6 +330,13 @@ export const getMyTransactionsService = async (userId: string) => {
     ...transaction,
     id: transaction.id.toString(),
     totalAmount: transaction.totalAmount.toString(),
+    checkedInAt: transaction.checkedInAt?.toISOString() ?? null,
+    review: transaction.review
+      ? {
+          ...transaction.review,
+          id: transaction.review.id.toString(),
+        }
+      : null,
     event: {
       ...transaction.event,
       id: transaction.event.id.toString(),
@@ -332,5 +349,4 @@ export const getMyTransactionsService = async (userId: string) => {
     })),
   }));
 };
-
 

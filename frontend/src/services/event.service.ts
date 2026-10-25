@@ -168,14 +168,19 @@ export type OrganizerEventAttendeesResponse = {
     totalAttendees: number;
     totalTickets: number;
     totalRevenue: string;
+    page: number;
+    limit: number;
+    totalPages: number;
   };
 };
 
 export const getOrganizerEventAttendees = async (
   eventId: string,
+  params: { page?: number; limit?: number } = {},
 ): Promise<OrganizerEventAttendeesResponse> => {
   const response = await api.get<OrganizerEventAttendeesResponse>(
     `/organizer/events/${eventId}/attendees`,
+    { params },
   );
 
   return response.data;

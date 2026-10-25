@@ -1,6 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
-import { useParams, Link } from "react-router";
-import { getOrganizerEventAttendees } from "../services/event.service";
+import { useOrganizerEventAttendees } from "@/hooks/useOrganizerEventAttendees";
+import { useState } from "react";
+import { Link, useParams } from "react-router";
+
+const PAGE_SIZE = 10;
 
 const formatRupiah = (value: string | number) => {
   return new Intl.NumberFormat("id-ID", {
@@ -12,13 +14,14 @@ const formatRupiah = (value: string | number) => {
 
 export default function OrganizerEventAttendeesPage() {
   const { eventId } = useParams<{ eventId: string }>();
+  const [page, setPage] = useState(1);
+  const limit = 10;
 
-  const { data, isPending, isError } = useQuery({
-    queryKey: ["organizer-event-attendees", eventId],
-    queryFn: () => getOrganizerEventAttendees(eventId!),
-    enabled: Boolean(eventId),
+  const { data, isPending, isError } = useOrganizerEventAttendees({
+    eventId: eventId!,
+    page,
+    limit,
   });
-
   if (isPending) {
     return <p className="p-6">Memuat daftar peserta...</p>;
   }
@@ -37,6 +40,8 @@ export default function OrganizerEventAttendeesPage() {
     );
   }
 
+  const { totalPages, totalAttendees } = data.meta;
+
   return (
     <div className="space-y-6 p-6">
       <div>
@@ -48,7 +53,6 @@ export default function OrganizerEventAttendeesPage() {
         </Link>
 
         <h1 className="mt-3 text-2xl font-bold">Daftar Peserta</h1>
-
         <p className="mt-1 text-gray-600">{data.event.name}</p>
       </div>
 
@@ -93,7 +97,9 @@ export default function OrganizerEventAttendeesPage() {
             ) : (
               data.data.map((attendee, index) => (
                 <tr key={attendee.userId} className="border-t">
-                  <td className="px-4 py-3">{index + 1}</td>
+                  <td className="px-4 py-3">
+                    {(page - 1) * PAGE_SIZE + index + 1}
+                  </td>
                   <td className="px-4 py-3 font-medium">{attendee.name}</td>
                   <td className="px-4 py-3">{attendee.email}</td>
                   <td className="px-4 py-3">{attendee.ticketQuantity}</td>
@@ -106,6 +112,32 @@ export default function OrganizerEventAttendeesPage() {
           </tbody>
         </table>
       </div>
+
+      {totalAttendees > 0 && (
+        <div className="flex items-center justify-between gap-4">
+          <button
+            type="button"
+            disabled={page <= 1}
+            onClick={() => setPage((current) => current - 1)}
+            className="rounded-lg border px-4 py-2 disabled:opacity-40"
+          >
+            Sebelumnya
+          </button>
+
+          <span className="text-sm">
+            Halaman {data.meta.page} dari {data.meta.totalPages}
+          </span>
+
+          <button
+            type="button"
+            disabled={page >= totalPages}
+            onClick={() => setPage((current) => current + 1)}
+            className="rounded-lg border px-4 py-2 disabled:opacity-40"
+          >
+            Berikutnya
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -38,6 +38,7 @@ export const useRegister = () => {
 
 export const useLogin = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: LoginSchema) => {
       const response = await api.post("/auth/login", {
@@ -46,13 +47,20 @@ export const useLogin = () => {
       });
       return response.data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       localStorage.setItem("accessToken", data.accessToken);
+
+      // Hapus cache profil dari akun sebelumnya
+      queryClient.removeQueries({
+        queryKey: ["profile"],
+      });
+
       toast.success("Login success!");
+
       if (data.user.role === "CUSTOMER") {
-        navigate("/");
+        navigate("/", { replace: true });
       } else if (data.user.role === "ORGANIZER") {
-        navigate("/organizer/dashboard");
+        navigate("/organizer/dashboard", { replace: true });
       }
     },
     onError: (error: AxiosError<{ message: string }>) => {

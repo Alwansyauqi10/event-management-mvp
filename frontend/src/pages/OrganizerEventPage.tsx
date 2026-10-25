@@ -1,32 +1,32 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  deleteOrganizerEvent,
-  getOrganizerEvents,
-} from "../services/event.service";
+  useOrganizerEvents,
+  useDeleteOrganizerEvent,
+} from "@/hooks/useOrganizerEvents";
 
 export default function OrganizerEventsPage() {
   const [page, setPage] = useState(1);
   const limit = 8;
 
-  const { data, isPending, isError, error } = useQuery({
-    queryKey: ["organizer-events", page, limit],
-    queryFn: () => getOrganizerEvents({ page, limit }),
+  const { data, isPending, isError, error } = useOrganizerEvents({
+    page,
+    limit,
   });
-  const queryClient = useQueryClient();
+
+  const deleteMutation = useDeleteOrganizerEvent();
   const [deleteEventId, setDeleteEventId] = useState<string | null>(null);
 
-  const deleteMutation = useMutation({
-    mutationFn: deleteOrganizerEvent,
-    onSuccess: async () => {
-      setDeleteEventId(null);
+  const handleDelete = async () => {
+    if (!deleteEventId) return;
 
-      await queryClient.invalidateQueries({
-        queryKey: ["organizer-events"],
-      });
-    },
-  });
+    try {
+      await deleteMutation.mutateAsync(deleteEventId);
+      setDeleteEventId(null);
+    } catch {
+      // Error ditampilkan melalui deleteMutation.isError.
+    }
+  };
 
   if (isPending) {
     return <p className="p-6">Memuat event...</p>;
@@ -71,9 +71,7 @@ export default function OrganizerEventsPage() {
               {events.map((event) => (
                 <tr key={event.id} className="border-t">
                   <td className="p-4 font-medium">{event.name}</td>
-
                   <td className="p-4">{event.category.name}</td>
-
                   <td className="p-4">{event.location}</td>
 
                   <td className="p-4">
@@ -92,6 +90,7 @@ export default function OrganizerEventsPage() {
                       >
                         Lihat Peserta
                       </Link>
+
                       <Link
                         to={`/organizer/events/${event.id}/edit`}
                         className="whitespace-nowrap rounded-lg bg-amber-500 px-3 py-2 text-white hover:bg-amber-600"
@@ -101,7 +100,10 @@ export default function OrganizerEventsPage() {
 
                       <button
                         type="button"
-                        onClick={() => setDeleteEventId(event.id)}
+                        onClick={() => {
+                          deleteMutation.reset();
+                          setDeleteEventId(event.id);
+                        }}
                         className="rounded-lg bg-red-600 px-3 py-2 text-white hover:bg-red-700"
                       >
                         Hapus
@@ -138,6 +140,7 @@ export default function OrganizerEventsPage() {
           Berikutnya
         </button>
       </div>
+
       {deleteEventId !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
@@ -170,7 +173,7 @@ export default function OrganizerEventsPage() {
               <button
                 type="button"
                 disabled={deleteMutation.isPending}
-                onClick={() => deleteMutation.mutate(deleteEventId)}
+                onClick={handleDelete}
                 className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:opacity-50"
               >
                 {deleteMutation.isPending ? "Menghapus..." : "Ya, Hapus"}

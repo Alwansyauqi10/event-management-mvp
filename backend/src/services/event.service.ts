@@ -59,7 +59,7 @@ export const getEventsService = async ({
 
   const [events, total] = await Promise.all([
     prisma.event.findMany({
-      where,
+      where: { deletedAt: null },
       include: {
         category: true,
       },

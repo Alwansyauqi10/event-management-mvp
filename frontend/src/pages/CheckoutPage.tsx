@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { api } from "@/lib/axios";
+import { createTransaction } from "@/services/transaction.service";
 
 type CheckoutTicket = {
   id: string;
@@ -41,8 +41,7 @@ export default function CheckoutPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [createdTransaction, setCreatedTransaction] =
-    useState<CreatedTransaction | null>(null);
+  const [createdTransaction] = useState<CreatedTransaction | null>(null);
 
   if (
     !state?.event ||
@@ -89,7 +88,7 @@ export default function CheckoutPage() {
     setErrorMessage("");
 
     try {
-      const response = await api.post("/transactions", {
+      const response = await createTransaction({
         eventId: event.id,
         tickets: tickets.map((ticket) => ({
           ticketId: ticket.id,
@@ -97,19 +96,22 @@ export default function CheckoutPage() {
         })),
       });
 
-      const transaction = response.data.transaction;
+      const transaction = response.transaction;
 
-      setCreatedTransaction({
-        id: String(transaction.id),
-        transactionCode: String(transaction.transactionCode),
-        status: String(transaction.status),
-        totalAmount: String(transaction.totalAmount),
+      navigate(`/payment/${transaction.id}`, {
+        state: {
+          transaction: {
+            id: String(transaction.id),
+            transactionCode: String(transaction.transactionCode),
+            status: String(transaction.status),
+            totalAmount: String(transaction.totalAmount),
+            paymentProofDeadline: transaction.paymentProofDeadline ?? null,
+          },
+        },
       });
     } catch (error: unknown) {
       const message =
-        typeof error === "object" &&
-        error !== null &&
-        "response" in error
+        typeof error === "object" && error !== null && "response" in error
           ? (
               error as {
                 response?: {
@@ -119,9 +121,7 @@ export default function CheckoutPage() {
             ).response?.data?.message
           : undefined;
 
-      setErrorMessage(
-        message || "Transaksi gagal dibuat. Silakan coba lagi.",
-      );
+      setErrorMessage(message || "Transaksi gagal dibuat. Silakan coba lagi.");
     } finally {
       setIsSubmitting(false);
     }
@@ -155,12 +155,8 @@ export default function CheckoutPage() {
               />
             )}
 
-            <h2 className="text-xl font-bold text-slate-900">
-              {event.name}
-            </h2>
-            <p className="mt-2 text-sm text-slate-600">
-              {event.location}
-            </p>
+            <h2 className="text-xl font-bold text-slate-900">{event.name}</h2>
+            <p className="mt-2 text-sm text-slate-600">{event.location}</p>
             <p className="mt-1 text-sm text-slate-600">
               {new Date(event.startDate).toLocaleDateString("id-ID", {
                 day: "numeric",
@@ -171,9 +167,7 @@ export default function CheckoutPage() {
 
             <div className="my-6 border-t border-slate-200" />
 
-            <h3 className="font-semibold text-slate-900">
-              Selected tickets
-            </h3>
+            <h3 className="font-semibold text-slate-900">Selected tickets</h3>
 
             <div className="mt-4 space-y-4">
               {tickets.map((ticket) => (
@@ -182,9 +176,7 @@ export default function CheckoutPage() {
                   className="flex items-start justify-between gap-4"
                 >
                   <div>
-                    <p className="font-medium text-slate-800">
-                      {ticket.name}
-                    </p>
+                    <p className="font-medium text-slate-800">{ticket.name}</p>
                     <p className="mt-1 text-sm text-slate-500">
                       {formatPrice(ticket.price)} × {ticket.quantity}
                     </p>
@@ -198,9 +190,7 @@ export default function CheckoutPage() {
           </section>
 
           <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-6">
-            <h2 className="text-lg font-bold text-slate-900">
-              Order Summary
-            </h2>
+            <h2 className="text-lg font-bold text-slate-900">Order Summary</h2>
 
             <div className="mt-5 flex justify-between gap-4 text-sm text-slate-600">
               <span>Total tickets</span>
@@ -232,9 +222,7 @@ export default function CheckoutPage() {
                 <h3 className="font-semibold text-green-800">
                   Transaction created!
                 </h3>
-                <p className="mt-2 text-sm text-green-800">
-                  Transaction code
-                </p>
+                <p className="mt-2 text-sm text-green-800">Transaction code</p>
                 <p className="break-all font-bold text-green-900">
                   {createdTransaction.transactionCode}
                 </p>
@@ -245,8 +233,8 @@ export default function CheckoutPage() {
                   Total: {formatPrice(createdTransaction.totalAmount)}
                 </p>
                 <p className="mt-3 text-xs leading-5 text-green-800">
-                  Transaksi berhasil dibuat. Tahap upload bukti pembayaran
-                  belum terhubung.
+                  Transaksi berhasil dibuat. Tahap upload bukti pembayaran belum
+                  terhubung.
                 </p>
               </div>
             ) : (
@@ -264,8 +252,8 @@ export default function CheckoutPage() {
 
             {!createdTransaction && (
               <p className="mt-3 text-xs leading-5 text-slate-500">
-                Your ticket availability and transaction will be checked by
-                the server.
+                Your ticket availability and transaction will be checked by the
+                server.
               </p>
             )}
           </aside>

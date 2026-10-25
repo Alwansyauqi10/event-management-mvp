@@ -7,6 +7,9 @@ import { globalError, notFoundError } from "./utils/error.js";
 import { referralRoutes } from "./routes/referral.routes.js";
 import organizerRouter from "./routes/organizerDashboard.routes.js";
 import transactionRouter from "./routes/transaction.routes.js";
+import paymentProofRouter from "./routes/payment-proof.routes.js";
+import checkInRouter from "./routes/checkIn.routes.js";
+import eventReviewRouter from "./routes/eventReview.routes.js";
 
 dotenv.config();
 
@@ -20,6 +23,11 @@ app.use("/auth", authRoutes);
 app.use("/referral", referralRoutes);
 app.use("/organizer", organizerRouter);
 app.use("/transactions", transactionRouter);
+app.use("/transactions", paymentProofRouter);
+app.use("/organizer", organizerRouter);
+app.use("/organizer", checkInRouter);
+app.use("/transactions", paymentProofRouter);
+app.use("/event-reviews", eventReviewRouter);
 
 app.get("/", (req, res) => {
   res.json({ message: "Event Management API is running" });

@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
+import type { EventCategory, Ticket } from "../services/event.service";
 import {
-  getEventById,
-  getEventCategories,
-  type EventCategory,
-  type Ticket,
-} from "../services/event.service";
+  useEditOrganizerEvent,
+  useUpdateOrganizerEvent,
+} from "../hooks/useEditOrganizerEvent";
 import { toast } from "sonner";
 
 type TicketForm = {
@@ -20,10 +19,12 @@ export default function EditEventPage() {
   const { eventId } = useParams();
   const navigate = useNavigate();
 
+  const { data, isPending, isError } = useEditOrganizerEvent(eventId);
+  const updateMutation = useUpdateOrganizerEvent();
+
+  const [initializedEventId, setInitializedEventId] = useState<string>();
   const [categories, setCategories] = useState<EventCategory[]>([]);
   const [tickets, setTickets] = useState<TicketForm[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   const [form, setForm] = useState({
@@ -38,63 +39,42 @@ export default function EditEventPage() {
   const [image, setImage] = useState<File | undefined>();
   const [currentImage, setCurrentImage] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadEvent = async () => {
-      if (!eventId) {
-        setError("ID event tidak ditemukan.");
-        setIsLoading(false);
-        return;
-      }
+  // Inisialisasi form ketika data query sudah tersedia, tanpa useEffect.
+  if (data && initializedEventId !== eventId) {
+    const event = data.event;
 
-      try {
-        setError("");
-
-        const [eventResponse, categoryResponse] = await Promise.all([
-          getEventById(eventId),
-          getEventCategories(),
-        ]);
-
-        const event = eventResponse.data;
-
-        setCategories(categoryResponse.data);
-        setCurrentImage(event.image);
-
-        const toDateTimeLocal = (value: string) => {
-          const date = new Date(value);
-          const offset = date.getTimezoneOffset() * 60_000;
-          return new Date(date.getTime() - offset).toISOString().slice(0, 16);
-        };
-
-        setForm({
-          name: event.name,
-          categoryId: event.categoryId,
-          location: event.location,
-          startDate: toDateTimeLocal(event.startDate),
-          endDate: toDateTimeLocal(event.endDate),
-          description: event.description,
-        });
-
-        const existingTickets: Ticket[] = event.tickets ?? [];
-
-        setTickets(
-          existingTickets.map((ticket) => ({
-            id: ticket.id,
-            name: ticket.name,
-            price: ticket.price,
-            quantity: String(ticket.quantity),
-            reservedQuantity: ticket.quantity - ticket.availableQuantity,
-          })),
-        );
-      } catch (err) {
-        console.error("Gagal memuat event:", err);
-        setError("Gagal memuat detail event. Silakan coba lagi.");
-      } finally {
-        setIsLoading(false);
-      }
+    const toDateTimeLocal = (value: string) => {
+      const date = new Date(value);
+      const offset = date.getTimezoneOffset() * 60_000;
+      return new Date(date.getTime() - offset).toISOString().slice(0, 16);
     };
 
-    void loadEvent();
-  }, [eventId]);
+    setCategories(data.categories);
+    setCurrentImage(event.image);
+
+    setForm({
+      name: event.name,
+      categoryId: event.categoryId,
+      location: event.location,
+      startDate: toDateTimeLocal(event.startDate),
+      endDate: toDateTimeLocal(event.endDate),
+      description: event.description,
+    });
+
+    const existingTickets: Ticket[] = event.tickets ?? [];
+
+    setTickets(
+      existingTickets.map((ticket) => ({
+        id: ticket.id,
+        name: ticket.name,
+        price: ticket.price,
+        quantity: String(ticket.quantity),
+        reservedQuantity: ticket.quantity - ticket.availableQuantity,
+      })),
+    );
+
+    setInitializedEventId(eventId);
+  }
 
   const updateField = (field: keyof typeof form, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -128,15 +108,28 @@ export default function EditEventPage() {
     setTickets((current) => current.filter((_, i) => i !== index));
   };
 
-  if (isLoading) {
-    return <p className="p-6">Memuat detail event...</p>;
-  }
-
-  if (error && !form.name) {
+  if (!eventId) {
     return (
       <main className="space-y-4 p-6">
         <p role="alert" className="text-red-600">
-          {error}
+          ID event tidak ditemukan.
+        </p>
+        <Link to="/organizer/events" className="text-blue-600">
+          Kembali ke Event Saya
+        </Link>
+      </main>
+    );
+  }
+
+  if (isPending || (data && initializedEventId !== eventId)) {
+    return <p className="p-6">Memuat detail event...</p>;
+  }
+
+  if (isError || !data) {
+    return (
+      <main className="space-y-4 p-6">
+        <p role="alert" className="text-red-600">
+          Gagal memuat detail event. Silakan coba lagi.
         </p>
         <Link to="/organizer/events" className="text-blue-600">
           Kembali ke Event Saya
@@ -192,23 +185,21 @@ export default function EditEventPage() {
       return;
     }
 
-    setIsSubmitting(true);
-
     try {
-      const { updateOrganizerEvent } =
-        await import("../services/event.service");
-
-      await updateOrganizerEvent(eventId, {
-        ...form,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        tickets: tickets.map((ticket) => ({
-          ...(ticket.id ? { id: ticket.id } : {}),
-          name: ticket.name.trim(),
-          price: ticket.price.trim(),
-          quantity: Number(ticket.quantity),
-        })),
-        ...(image ? { image } : {}),
+      await updateMutation.mutateAsync({
+        eventId,
+        payload: {
+          ...form,
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+          tickets: tickets.map((ticket) => ({
+            ...(ticket.id ? { id: ticket.id } : {}),
+            name: ticket.name.trim(),
+            price: ticket.price.trim(),
+            quantity: Number(ticket.quantity),
+          })),
+          ...(image ? { image } : {}),
+        },
       });
 
       toast.success("Event berhasil diperbarui!");
@@ -216,8 +207,6 @@ export default function EditEventPage() {
     } catch (err) {
       console.error("Gagal memperbarui event:", err);
       toast.error("Gagal memperbarui event. Periksa data dan coba lagi.");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -505,10 +494,10 @@ export default function EditEventPage() {
 
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={updateMutation.isPending}
               className="inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
             >
-              {isSubmitting ? "Menyimpan..." : "Simpan Perubahan"}
+              {updateMutation.isPending ? "Menyimpan..." : "Simpan Perubahan"}
             </button>
           </div>
         </form>

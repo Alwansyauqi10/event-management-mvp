@@ -1,6 +1,5 @@
 import OrganizerStatisticsChart from "@/components/ui/OrganizerStatisticsChart";
 import { useOrganizerDashboard } from "@/hooks/useOrganizerDashboard";
-import { Link } from "react-router";
 
 const eventStatusLabels: Record<string, string> = {
   DRAFT: "Draft",
@@ -183,25 +182,6 @@ export default function OrganizerDashboardPage() {
             <p className="mt-2 text-sm leading-6 text-gray-500 sm:text-base">
               Pantau performa event dan kelola transaksi kamu dalam satu tempat.
             </p>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Link
-              to="/organizer/events/create"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800 focus:outline-none focus:ring-4 focus:ring-gray-200"
-            >
-              <span aria-hidden="true">+</span>
-              Buat Event
-            </Link>
-
-            <Link
-              to="/organizer/transactions"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
-            >
-              <span aria-hidden="true">▤</span>
-              Lihat Transaksi
-              <span aria-hidden="true">→</span>
-            </Link>
           </div>
         </header>
 

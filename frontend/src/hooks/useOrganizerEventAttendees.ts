@@ -1,4 +1,5 @@
-import { getOrganizerEventAttendees } from "@/services/event.service";
+import { api } from "@/lib/axios";
+import type { OrganizerEventAttendeesResponse } from "@/services/event.service";
 import { useQuery } from "@tanstack/react-query";
 
 type UseOrganizerEventAttendeesParams = {
@@ -14,7 +15,15 @@ export const useOrganizerEventAttendees = ({
 }: UseOrganizerEventAttendeesParams) => {
   return useQuery({
     queryKey: ["organizer", "event-attendees", { eventId, page, limit }],
-    queryFn: () => getOrganizerEventAttendees(eventId, { page, limit }),
+    queryFn: async () => {
+      const response = await api.get<OrganizerEventAttendeesResponse>(
+        `/organizer/events/${eventId}/attendees`,
+        { params: { page, limit } },
+      );
+
+      return response.data;
+    },
+    enabled: Boolean(eventId),
     placeholderData: (previousData) => previousData,
   });
 };

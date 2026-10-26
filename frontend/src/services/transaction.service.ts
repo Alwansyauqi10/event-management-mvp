@@ -1,3 +1,4 @@
+
 import { api } from "@/lib/axios";
 
 export interface CreateTransactionInput {
@@ -6,11 +7,17 @@ export interface CreateTransactionInput {
     ticketId: string;
     quantity: number;
   }[];
+  pointsToUse?: string;
 }
+
 export interface CreatedTransaction {
   id: string;
   transactionCode: string;
   status: string;
+  subTotal: string;
+  pointDiscount: string;
+  voucherDiscount: string;
+  couponDiscount: string;
   totalAmount: string;
   paymentProofDeadline: string | null;
   event: {
@@ -25,11 +32,12 @@ export interface CreatedTransaction {
     subTotal: string;
   }[];
 }
+
 export interface CreateTransactionResponse {
-  data: any;
   message: string;
   transaction: CreatedTransaction;
 }
+
 export interface UploadPaymentProofResponse {
   message: string;
   [key: string]: unknown;
@@ -60,6 +68,7 @@ export const uploadPaymentProof = async (
 
   return response.data;
 };
+
 export interface TransactionStatus {
   id: string;
   transactionCode: string;
@@ -73,6 +82,7 @@ export interface TransactionStatus {
     | string;
   paymentProofDeadline: string | null;
 }
+
 export interface TransactionStatusResponse {
   message: string;
   data: TransactionStatus;
@@ -87,6 +97,7 @@ export const getTransactionStatus = async (
 
   return response.data.data;
 };
+
 export interface MyTransactionItem {
   ticketId: string;
   price: string;
@@ -96,6 +107,7 @@ export interface MyTransactionItem {
     name: string;
   };
 }
+
 export interface MyTransaction {
   id: string;
   transactionCode: string;
@@ -118,6 +130,7 @@ export interface MyTransaction {
   };
   items: MyTransactionItem[];
 }
+
 export interface MyTransactionsResponse {
   message: string;
   data: MyTransaction[];

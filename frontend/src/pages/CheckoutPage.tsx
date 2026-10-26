@@ -1,5 +1,7 @@
-import { useState } from "react";
+
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
+import { api } from "@/lib/axios";
 import { createTransaction } from "@/services/transaction.service";
 
 type CheckoutTicket = {
@@ -20,19 +22,37 @@ type CheckoutState = {
   tickets: CheckoutTicket[];
 };
 
-type CreatedTransaction = {
-  id: string;
-  transactionCode: string;
-  status: string;
-  totalAmount: string;
+type PointBalanceResponse = {
+  points: string;
+  message?: string;
 };
 
-const formatPrice = (price: string | number) =>
+const formatPrice = (price: string | number | bigint) =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     maximumFractionDigits: 0,
   }).format(Number(price));
+
+const getErrorMessage = (error: unknown) => {
+  if (typeof error === "object" && error !== null && "response" in error) {
+    const response = (
+      error as {
+        response?: {
+          data?: {
+            message?: string;
+          };
+        };
+      }
+    ).response;
+
+    if (response?.data?.message) {
+      return response.data.message;
+    }
+  }
+
+  return "Transaksi gagal dibuat. Silakan coba lagi.";
+};
 
 export default function CheckoutPage() {
   const location = useLocation();
@@ -41,7 +61,47 @@ export default function CheckoutPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [createdTransaction] = useState<CreatedTransaction | null>(null);
+  const [pointsToUse, setPointsToUse] = useState("0");
+  const [pointBalance, setPointBalance] = useState("0");
+  const [isLoadingPoints, setIsLoadingPoints] = useState(true);
+  const [pointBalanceError, setPointBalanceError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    const fetchPointBalance = async () => {
+      try {
+        const response = await api.get<PointBalanceResponse>(
+          "/referral/points",
+        );
+
+        if (!active) return;
+
+        setPointBalance(response.data.points ?? "0");
+        setPointBalanceError("");
+      } catch (error) {
+        if (!active) return;
+
+        setPointBalance("0");
+        setPointBalanceError(
+          getErrorMessage(error) ===
+            "Transaksi gagal dibuat. Silakan coba lagi."
+            ? "Saldo poin tidak dapat dimuat. Coba muat ulang halaman."
+            : getErrorMessage(error),
+        );
+      } finally {
+        if (active) {
+          setIsLoadingPoints(false);
+        }
+      }
+    };
+
+    void fetchPointBalance();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   if (
     !state?.event ||
@@ -76,13 +136,47 @@ export default function CheckoutPage() {
     0,
   );
 
+  // Gunakan BigInt untuk menghitung nominal agar konsisten dengan backend.
   const subtotal = tickets.reduce(
-    (total, ticket) => total + Number(ticket.price) * ticket.quantity,
-    0,
+    (total, ticket) =>
+      total + BigInt(String(ticket.price)) * BigInt(ticket.quantity),
+    0n,
   );
 
+  const requestedPoints =
+    /^\d+$/.test(pointsToUse) ? BigInt(pointsToUse) : 0n;
+
+  const availablePoints =
+    /^\d+$/.test(pointBalance) ? BigInt(pointBalance) : 0n;
+
+  const pointsExceedBalance = requestedPoints > availablePoints;
+  const pointsExceedSubtotal = requestedPoints > subtotal;
+
+  const pointDiscount = pointsExceedSubtotal
+    ? subtotal
+    : requestedPoints;
+
+  const totalAfterPoints = subtotal - pointDiscount;
+
+  const isPointInputInvalid =
+    pointsToUse.trim() === "" ||
+    !/^\d+$/.test(pointsToUse) ||
+    pointsExceedBalance ||
+    pointsExceedSubtotal;
+
   const handleContinueToPayment = async () => {
-    if (isSubmitting || createdTransaction) return;
+    if (isSubmitting || isLoadingPoints) return;
+
+    if (isPointInputInvalid) {
+      setErrorMessage(
+        pointsExceedBalance
+          ? "Saldo poin tidak mencukupi."
+          : pointsExceedSubtotal
+            ? "Poin yang digunakan tidak boleh melebihi subtotal."
+            : "Jumlah poin tidak valid.",
+      );
+      return;
+    }
 
     setIsSubmitting(true);
     setErrorMessage("");
@@ -94,6 +188,7 @@ export default function CheckoutPage() {
           ticketId: ticket.id,
           quantity: ticket.quantity,
         })),
+        pointsToUse: requestedPoints.toString(),
       });
 
       const transaction = response.transaction;
@@ -101,27 +196,17 @@ export default function CheckoutPage() {
       navigate(`/payment/${transaction.id}`, {
         state: {
           transaction: {
-            id: String(transaction.id),
-            transactionCode: String(transaction.transactionCode),
-            status: String(transaction.status),
-            totalAmount: String(transaction.totalAmount),
-            paymentProofDeadline: transaction.paymentProofDeadline ?? null,
+            id: transaction.id,
+            transactionCode: transaction.transactionCode,
+            status: transaction.status,
+            totalAmount: transaction.totalAmount,
+            paymentProofDeadline:
+              transaction.paymentProofDeadline ?? null,
           },
         },
       });
     } catch (error: unknown) {
-      const message =
-        typeof error === "object" && error !== null && "response" in error
-          ? (
-              error as {
-                response?: {
-                  data?: { message?: string };
-                };
-              }
-            ).response?.data?.message
-          : undefined;
-
-      setErrorMessage(message || "Transaksi gagal dibuat. Silakan coba lagi.");
+      setErrorMessage(getErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
@@ -155,8 +240,12 @@ export default function CheckoutPage() {
               />
             )}
 
-            <h2 className="text-xl font-bold text-slate-900">{event.name}</h2>
-            <p className="mt-2 text-sm text-slate-600">{event.location}</p>
+            <h2 className="text-xl font-bold text-slate-900">
+              {event.name}
+            </h2>
+            <p className="mt-2 text-sm text-slate-600">
+              {event.location}
+            </p>
             <p className="mt-1 text-sm text-slate-600">
               {new Date(event.startDate).toLocaleDateString("id-ID", {
                 day: "numeric",
@@ -167,7 +256,9 @@ export default function CheckoutPage() {
 
             <div className="my-6 border-t border-slate-200" />
 
-            <h3 className="font-semibold text-slate-900">Selected tickets</h3>
+            <h3 className="font-semibold text-slate-900">
+              Selected tickets
+            </h3>
 
             <div className="mt-4 space-y-4">
               {tickets.map((ticket) => (
@@ -176,13 +267,18 @@ export default function CheckoutPage() {
                   className="flex items-start justify-between gap-4"
                 >
                   <div>
-                    <p className="font-medium text-slate-800">{ticket.name}</p>
+                    <p className="font-medium text-slate-800">
+                      {ticket.name}
+                    </p>
                     <p className="mt-1 text-sm text-slate-500">
                       {formatPrice(ticket.price)} × {ticket.quantity}
                     </p>
                   </div>
                   <p className="shrink-0 font-semibold text-slate-900">
-                    {formatPrice(Number(ticket.price) * ticket.quantity)}
+                    {formatPrice(
+                      BigInt(String(ticket.price)) *
+                        BigInt(ticket.quantity),
+                    )}
                   </p>
                 </div>
               ))}
@@ -190,7 +286,9 @@ export default function CheckoutPage() {
           </section>
 
           <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-6">
-            <h2 className="text-lg font-bold text-slate-900">Order Summary</h2>
+            <h2 className="text-lg font-bold text-slate-900">
+              Order Summary
+            </h2>
 
             <div className="mt-5 flex justify-between gap-4 text-sm text-slate-600">
               <span>Total tickets</span>
@@ -199,12 +297,91 @@ export default function CheckoutPage() {
               </span>
             </div>
 
+            <div className="mt-4 flex justify-between gap-4">
+              <span className="font-medium text-slate-600">Subtotal</span>
+              <span className="font-semibold text-slate-900">
+                {formatPrice(subtotal)}
+              </span>
+            </div>
+
             <div className="my-5 border-t border-slate-200" />
 
-            <div className="flex justify-between gap-4">
-              <span className="font-medium text-slate-600">Subtotal</span>
+            <section>
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="font-semibold text-slate-900">
+                  Use Points
+                </h3>
+                <span className="text-xs text-slate-500">
+                  1 point = Rp1
+                </span>
+              </div>
+
+              <p className="mt-2 text-sm text-slate-600">
+                Available balance:{" "}
+                {isLoadingPoints ? "Loading..." : `${pointBalance} points`}
+              </p>
+
+              {pointBalanceError && (
+                <p role="alert" className="mt-2 text-sm text-red-600">
+                  {pointBalanceError}
+                </p>
+              )}
+
+              <label
+                htmlFor="pointsToUse"
+                className="mt-4 block text-sm font-medium text-slate-700"
+              >
+                Points to use
+              </label>
+
+              <input
+                id="pointsToUse"
+                type="number"
+                min="0"
+                max={pointBalance}
+                step="1"
+                inputMode="numeric"
+                value={pointsToUse}
+                onChange={(inputEvent) => {
+                  const value = inputEvent.target.value;
+
+                  if (/^\d*$/.test(value)) {
+                    setPointsToUse(value);
+                    setErrorMessage("");
+                  }
+                }}
+                disabled={isLoadingPoints || Boolean(pointBalanceError)}
+                className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+              />
+
+              {pointsExceedBalance && (
+                <p className="mt-2 text-sm text-red-600">
+                  Saldo poin tidak mencukupi.
+                </p>
+              )}
+
+              {pointsExceedSubtotal && (
+                <p className="mt-2 text-sm text-red-600">
+                  Poin tidak boleh melebihi subtotal.
+                </p>
+              )}
+            </section>
+
+            <div className="my-5 border-t border-slate-200" />
+
+            <div className="flex justify-between gap-4 text-sm">
+              <span className="text-slate-600">Point discount</span>
+              <span className="font-medium text-green-700">
+                -{formatPrice(pointDiscount)}
+              </span>
+            </div>
+
+            <div className="mt-4 flex justify-between gap-4">
+              <span className="font-semibold text-slate-900">
+                Total payment
+              </span>
               <span className="text-xl font-bold text-slate-900">
-                {formatPrice(subtotal)}
+                {formatPrice(totalAfterPoints)}
               </span>
             </div>
 
@@ -217,45 +394,26 @@ export default function CheckoutPage() {
               </p>
             )}
 
-            {createdTransaction ? (
-              <div className="mt-6 rounded-xl border border-green-200 bg-green-50 p-4">
-                <h3 className="font-semibold text-green-800">
-                  Transaction created!
-                </h3>
-                <p className="mt-2 text-sm text-green-800">Transaction code</p>
-                <p className="break-all font-bold text-green-900">
-                  {createdTransaction.transactionCode}
-                </p>
-                <p className="mt-2 text-sm text-green-800">
-                  Status: {createdTransaction.status}
-                </p>
-                <p className="mt-1 text-sm text-green-800">
-                  Total: {formatPrice(createdTransaction.totalAmount)}
-                </p>
-                <p className="mt-3 text-xs leading-5 text-green-800">
-                  Transaksi berhasil dibuat. Tahap upload bukti pembayaran belum
-                  terhubung.
-                </p>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={handleContinueToPayment}
-                disabled={isSubmitting}
-                className="mt-6 w-full rounded-xl bg-blue-600 px-5 py-3.5 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
-              >
-                {isSubmitting
-                  ? "Creating Transaction..."
-                  : "Continue to Payment"}
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleContinueToPayment}
+              disabled={
+                isSubmitting ||
+                isLoadingPoints ||
+                Boolean(pointBalanceError) ||
+                isPointInputInvalid
+              }
+              className="mt-6 w-full rounded-xl bg-blue-600 px-5 py-3.5 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
+            >
+              {isSubmitting
+                ? "Creating Transaction..."
+                : "Continue to Payment"}
+            </button>
 
-            {!createdTransaction && (
-              <p className="mt-3 text-xs leading-5 text-slate-500">
-                Your ticket availability and transaction will be checked by the
-                server.
-              </p>
-            )}
+            <p className="mt-3 text-xs leading-5 text-slate-500">
+              Ticket availability, point balance, and final payment amount
+              are verified by the server.
+            </p>
           </aside>
         </div>
       </div>

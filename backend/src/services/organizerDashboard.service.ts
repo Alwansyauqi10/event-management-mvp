@@ -412,6 +412,7 @@ export const acceptOrganizerTransactionService = async ({
   };
 };
 
+
 export const rejectOrganizerTransactionService = async ({
   userId,
   transactionId,
@@ -435,6 +436,7 @@ export const rejectOrganizerTransactionService = async ({
       select: {
         id: true,
         userId: true,
+        eventId: true,
         transactionCode: true,
         status: true,
         user: {
@@ -462,6 +464,8 @@ export const rejectOrganizerTransactionService = async ({
       );
     }
 
+    // Ubah status secara kondisional untuk mencegah refund dan
+    // pemulihan stok dilakukan dua kali.
     const updatedTransaction = await tx.eventTransaction.updateMany({
       where: {
         id,
@@ -483,6 +487,93 @@ export const rejectOrganizerTransactionService = async ({
       );
     }
 
+    // 1. Pulihkan stok tiket.
+    const items = await tx.transactionItem.findMany({
+      where: {
+        transactionId: transaction.id,
+      },
+      select: {
+        ticketId: true,
+        quantity: true,
+      },
+    });
+
+    const totalQuantity = items.reduce(
+      (total, item) => total + item.quantity,
+      0,
+    );
+
+    for (const item of items) {
+      await tx.ticket.update({
+        where: {
+          id: item.ticketId,
+        },
+        data: {
+          availableQuantity: {
+            increment: item.quantity,
+          },
+        },
+      });
+    }
+
+    // 2. Pulihkan kuota kursi event.
+    if (totalQuantity > 0) {
+      await tx.event.update({
+        where: {
+          id: transaction.eventId,
+        },
+        data: {
+          availableSeats: {
+            increment: totalQuantity,
+          },
+        },
+      });
+    }
+
+    // 3. Kembalikan poin yang sebelumnya digunakan.
+    const pointDebits = await tx.pointTransaction.findMany({
+      where: {
+        userId: transaction.userId,
+        type: "DEBIT",
+        referenceType: "EVENT_TRANSACTION",
+        referenceId: transaction.id,
+      },
+      select: {
+        amount: true,
+        expiredAt: true,
+      },
+    });
+
+    // Cek apakah refund poin untuk transaksi ini sudah pernah dibuat.
+    const existingRefund = await tx.pointTransaction.findFirst({
+      where: {
+        userId: transaction.userId,
+        type: "REFUND",
+        referenceType: "EVENT_TRANSACTION_REFUND",
+        referenceId: transaction.id,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!existingRefund) {
+      for (const debit of pointDebits) {
+        await tx.pointTransaction.create({
+          data: {
+            userId: transaction.userId,
+            type: "REFUND",
+            amount: debit.amount,
+            remainingAmount: debit.amount,
+            referenceType: "EVENT_TRANSACTION_REFUND",
+            referenceId: transaction.id,
+            expiredAt: debit.expiredAt,
+          },
+        });
+      }
+    }
+
+    // 4. Buat notifikasi untuk customer.
     await tx.notification.create({
       data: {
         userId: transaction.userId,
@@ -503,6 +594,7 @@ export const rejectOrganizerTransactionService = async ({
     };
   });
 
+  // Email dikirim setelah transaksi database berhasil.
   try {
     await sendTransactionStatusEmail({
       to: result.email,
@@ -520,6 +612,8 @@ export const rejectOrganizerTransactionService = async ({
     status: result.status,
   };
 };
+
+
 export const getOrganizerEventsService = async (
   organizerId: bigint,
   page: number,

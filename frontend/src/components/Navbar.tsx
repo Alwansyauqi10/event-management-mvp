@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useProfile } from "@/hooks/useProfile";
@@ -129,7 +130,8 @@ function Navbar() {
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-lg font-bold text-haya-blue">
-                            {user?.name?.trim()?.charAt(0).toUpperCase() ?? "U"}
+                            {user?.name?.trim()?.charAt(0).toUpperCase() ??
+                              "U"}
                           </div>
                         )}
                       </div>
@@ -147,6 +149,7 @@ function Navbar() {
                     <div className="mx-2 border-t border-slate-100" />
 
                     <div className="pt-2">
+                      {/* Profil */}
                       <Link
                         to="/profile"
                         role="menuitem"
@@ -170,6 +173,32 @@ function Navbar() {
                         Profil Saya
                       </Link>
 
+                      {/* Poin Saya */}
+                      <Link
+                        to="/profile/points"
+                        role="menuitem"
+                        onClick={closeMenus}
+                        className={accountLinkClass}
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.7"
+                          className="h-5 w-5 shrink-0"
+                          aria-hidden="true"
+                        >
+                          <circle cx="12" cy="12" r="9" />
+                          <path
+                            d="M12 7v10M15 9.5c0-1.1-1.3-2-3-2s-3 .7-3 1.8 1.3 1.7 3 2.2 3 1.1 3 2.2-1.3 1.8-3 1.8-3-.9-3-2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        Poin Saya
+                      </Link>
+
+                      {/* Riwayat transaksi */}
                       <Link
                         to="/transaction/history"
                         role="menuitem"
@@ -202,6 +231,7 @@ function Navbar() {
 
                     <div className="my-2 border-t border-slate-100" />
 
+                    {/* Logout */}
                     <button
                       type="button"
                       role="menuitem"
@@ -317,6 +347,15 @@ function Navbar() {
                   className={accountLinkClass}
                 >
                   Profil Saya
+                </Link>
+
+                {/* Poin Saya - Mobile */}
+                <Link
+                  to="/profile/points"
+                  onClick={closeMenus}
+                  className={accountLinkClass}
+                >
+                  Poin Saya
                 </Link>
 
                 <Link

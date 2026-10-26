@@ -3,6 +3,10 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "../lib/prisma.js";
 import { ApiError } from "../utils/api-error.js";
 import { CHECKOUT_CONFIG } from "../config/checkout.config.js";
+import {
+  Prisma,
+  PointTransactionType,
+} from "../generated/prisma/client.js";
 
 type CreateTransactionInput = {
   eventId: string;
@@ -10,15 +14,141 @@ type CreateTransactionInput = {
     ticketId: string;
     quantity: number;
   }[];
+  pointsToUse?: string | number;
+};
+
+const POINT_REFERENCE_TYPE = "EVENT_TRANSACTION";
+const POINT_REFUND_REFERENCE_TYPE = "EVENT_TRANSACTION_REFUND";
+
+const parsePointsToUse = (value: string | number | undefined): bigint => {
+  const rawValue = value ?? "0";
+
+  if (
+    (typeof rawValue === "number" && !Number.isSafeInteger(rawValue)) ||
+    !/^\d+$/.test(String(rawValue))
+  ) {
+    throw new ApiError("Jumlah poin tidak valid", 400);
+  }
+
+  return BigInt(rawValue);
+};
+
+const deductPoints = async (
+  tx: Prisma.TransactionClient,
+  userId: bigint,
+  transactionId: bigint,
+  pointsToUse: bigint,
+): Promise<void> => {
+  if (pointsToUse === 0n) return;
+
+  const now = new Date();
+
+  const pointLots = await tx.pointTransaction.findMany({
+    where: {
+      userId,
+      type: {
+        in: [
+          PointTransactionType.CREDIT,
+          PointTransactionType.REFERRAL,
+          PointTransactionType.REFUND,
+        ],
+      },
+      remainingAmount: { gt: 0n },
+      OR: [{ expiredAt: null }, { expiredAt: { gt: now } }],
+    },
+    orderBy: { createdAt: "asc" },
+  });
+
+  // Poin dengan tanggal kedaluwarsa terdekat dipakai terlebih dahulu.
+  pointLots.sort((a, b) => {
+    if (a.expiredAt === null && b.expiredAt === null) {
+      return a.createdAt.getTime() - b.createdAt.getTime();
+    }
+    if (a.expiredAt === null) return 1;
+    if (b.expiredAt === null) return -1;
+
+    return (
+      a.expiredAt.getTime() - b.expiredAt.getTime() ||
+      a.createdAt.getTime() - b.createdAt.getTime()
+    );
+  });
+
+  const availablePoints = pointLots.reduce(
+    (total, lot) => total + lot.remainingAmount,
+    0n,
+  );
+
+  if (availablePoints < pointsToUse) {
+    throw new ApiError("Saldo poin tidak mencukupi", 400);
+  }
+
+  let remainingToDeduct = pointsToUse;
+
+  for (const lot of pointLots) {
+    if (remainingToDeduct === 0n) break;
+
+    const deduction =
+      lot.remainingAmount < remainingToDeduct
+        ? lot.remainingAmount
+        : remainingToDeduct;
+
+    // Conditional update mencegah saldo yang sama dipakai dua checkout.
+    const updated = await tx.pointTransaction.updateMany({
+      where: {
+        id: lot.id,
+        userId,
+        remainingAmount: lot.remainingAmount,
+      },
+      data: {
+        remainingAmount: { decrement: deduction },
+      },
+    });
+
+    if (updated.count !== 1) {
+      throw new ApiError(
+        "Saldo poin berubah. Silakan ulangi checkout",
+        409,
+      );
+    }
+
+    // Simpan debit per lot supaya refund bisa mempertahankan expiredAt.
+    await tx.pointTransaction.create({
+      data: {
+        userId,
+        type: PointTransactionType.DEBIT,
+        amount: deduction,
+        remainingAmount: 0n,
+        referenceType: POINT_REFERENCE_TYPE,
+        referenceId: transactionId,
+        expiredAt: lot.expiredAt,
+      },
+    });
+
+    remainingToDeduct -= deduction;
+  }
+
+  if (remainingToDeduct !== 0n) {
+    throw new ApiError("Saldo poin tidak berhasil diproses", 409);
+  }
 };
 
 export const createTransactionService = async (
   userId: string,
   input: CreateTransactionInput,
 ) => {
-  if (!input.eventId || !Array.isArray(input.tickets) || input.tickets.length === 0) {
+  if (
+    !input.eventId ||
+    !Array.isArray(input.tickets) ||
+    input.tickets.length === 0
+  ) {
     throw new ApiError("Event dan tiket wajib dipilih", 400);
   }
+
+  if (!/^\d+$/.test(input.eventId) || !/^\d+$/.test(userId)) {
+    throw new ApiError("ID event atau pengguna tidak valid", 400);
+  }
+
+  const pointsToUse = parsePointsToUse(input.pointsToUse);
 
   const quantities = new Map<string, number>();
 
@@ -43,14 +173,13 @@ export const createTransactionService = async (
     quantity,
   }));
 
-  const totalQuantity = tickets.reduce((sum, item) => sum + item.quantity, 0);
+  const totalQuantity = tickets.reduce(
+    (sum, item) => sum + item.quantity,
+    0,
+  );
 
   if (totalQuantity > CHECKOUT_CONFIG.MAX_TICKETS_PER_TRANSACTION) {
     throw new ApiError("Jumlah tiket melebihi batas transaksi", 400);
-  }
-
-  if (!/^\d+$/.test(input.eventId) || !/^\d+$/.test(userId)) {
-    throw new ApiError("ID event atau pengguna tidak valid", 400);
   }
 
   const eventId = BigInt(input.eventId);
@@ -143,6 +272,23 @@ export const createTransactionService = async (
       throw new ApiError("Sisa kursi event tidak mencukupi", 400);
     }
 
+    const pointValue = BigInt(CHECKOUT_CONFIG.POINT_VALUE_IN_RUPIAH);
+    const pointDiscount = pointsToUse * pointValue;
+
+    if (pointDiscount > subTotal) {
+      throw new ApiError("Diskon poin melebihi subtotal", 400);
+    }
+
+    // Batasi diskon total sesuai konfigurasi.
+    const maxDiscount =
+      (subTotal * BigInt(CHECKOUT_CONFIG.MAX_TOTAL_DISCOUNT_PERCENT)) / 100n;
+
+    if (pointDiscount > maxDiscount) {
+      throw new ApiError("Diskon poin melebihi batas maksimum", 400);
+    }
+
+    const totalAmount = subTotal - pointDiscount;
+
     // Cadangkan stok tiket secara kondisional agar tidak overselling.
     for (const item of tickets) {
       const reserved = await tx.ticket.updateMany({
@@ -191,10 +337,10 @@ export const createTransactionService = async (
         eventId,
         status: "WAITING_FOR_PAYMENT",
         subTotal,
-        pointDiscount: 0n,
+        pointDiscount,
         voucherDiscount: 0n,
         couponDiscount: 0n,
-        totalAmount: subTotal,
+        totalAmount,
         paymentProofDeadline: paymentDeadline,
         items: {
           create: items,
@@ -213,6 +359,9 @@ export const createTransactionService = async (
         },
       },
     });
+
+    // Potong poin di transaksi DB yang sama. Jika gagal, checkout rollback.
+    await deductPoints(tx, customerId, transaction.id, pointsToUse);
 
     return {
       message: "Transaksi berhasil dibuat",
@@ -236,7 +385,8 @@ export const createTransactionService = async (
         voucherDiscount: transaction.voucherDiscount.toString(),
         couponDiscount: transaction.couponDiscount.toString(),
         totalAmount: transaction.totalAmount.toString(),
-        paymentProofDeadline: transaction.paymentProofDeadline?.toISOString(),
+        paymentProofDeadline:
+          transaction.paymentProofDeadline?.toISOString() ?? null,
       },
     };
   });
@@ -249,7 +399,7 @@ export const getCustomerTransactionStatusService = async ({
   userId: string;
   transactionId: string;
 }) => {
-  if (!/^[1-9]\d*$/.test(transactionId)) {
+  if (!/^[1-9]\d*$/.test(transactionId) || !/^[1-9]\d*$/.test(userId)) {
     throw new ApiError("ID transaksi tidak valid", 400);
   }
 
@@ -276,9 +426,11 @@ export const getCustomerTransactionStatusService = async ({
   };
 };
 
-
-
 export const getMyTransactionsService = async (userId: string) => {
+  if (!/^[1-9]\d*$/.test(userId)) {
+    throw new ApiError("ID pengguna tidak valid", 400);
+  }
+
   const transactions = await prisma.eventTransaction.findMany({
     where: {
       userId: BigInt(userId),
@@ -349,4 +501,3 @@ export const getMyTransactionsService = async (userId: string) => {
     })),
   }));
 };
-

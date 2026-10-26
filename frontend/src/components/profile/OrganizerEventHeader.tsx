@@ -4,12 +4,12 @@ import { Link } from "react-router";
 export interface OrganizerEventInfo {
   id: string;
   name: string;
-  location: string | null;
-  startDate: string;
-  endDate?: string;
-  categoryId: string | number;
+  location?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  categoryId?: string | number | null;
   category?: {
-    name: string;
+    name?: string | null;
   } | null;
 }
 
@@ -36,7 +36,11 @@ export default function OrganizerEventHeader({
   description,
   event,
 }: OrganizerEventHeaderProps) {
-  const category = event.category?.name ?? `Kategori #${event.categoryId}`;
+  const category =
+    event.category?.name ||
+    (event.categoryId != null
+      ? `Kategori #${event.categoryId}`
+      : "Kategori belum tersedia");
 
   const startDate = event.startDate;
 

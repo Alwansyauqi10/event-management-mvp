@@ -22,8 +22,7 @@ function Navbar() {
     navigate("/login", { replace: true });
   };
 
-  const navLinkClass =
-    "transition-colors duration-200 hover:text-haya-blue";
+  const navLinkClass = "transition-colors duration-200 hover:text-haya-blue";
 
   const accountLinkClass =
     "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-haya-text transition-colors hover:bg-blue-50 hover:text-haya-blue";
@@ -44,7 +43,7 @@ function Navbar() {
 
   return (
     <nav className="absolute left-0 top-0 z-50 w-full border-b border-slate-100 bg-white/95 backdrop-blur-md">
-      <div className="mx-auto flex h-[76px] max-w-7xl items-center justify-between px-6 lg:px-8">
+      <div className="mx-auto flex h-19 max-w-7xl items-center justify-between px-6 lg:px-8">
         {/* Logo */}
         <Link to="/" onClick={closeMenus} className="shrink-0">
           <img
@@ -213,13 +212,7 @@ function Navbar() {
                           className="h-5 w-5 shrink-0"
                           aria-hidden="true"
                         >
-                          <rect
-                            x="4"
-                            y="3"
-                            width="16"
-                            height="18"
-                            rx="2"
-                          />
+                          <rect x="4" y="3" width="16" height="18" rx="2" />
                           <path
                             d="M8 8h8M8 12h8M8 16h5"
                             strokeLinecap="round"

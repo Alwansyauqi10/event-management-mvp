@@ -27,8 +27,13 @@ api.interceptors.response.use(
     ];
 
     const isPublicAuthRequest = publicAuthPaths.includes(requestPath ?? "");
+    const isProfileRequest = requestPath === "/auth/profile";
 
-    if (error.response?.status === 401 && !isPublicAuthRequest) {
+    if (
+      error.response?.status === 401 &&
+      !isPublicAuthRequest &&
+      !isProfileRequest
+    ) {
       localStorage.removeItem("accessToken");
 
       if (window.location.pathname !== "/login") {

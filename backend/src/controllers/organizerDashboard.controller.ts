@@ -189,9 +189,37 @@ export const getOrganizerEventAttendeesController = async (
       return;
     }
 
+    // Ambil pagination dari query parameter.
+    const pageParam = req.query.page;
+    const limitParam = req.query.limit;
+
+    const page =
+      typeof pageParam === "string" && /^\d+$/.test(pageParam)
+        ? Number(pageParam)
+        : 1;
+
+    const limit =
+      typeof limitParam === "string" && /^\d+$/.test(limitParam)
+        ? Number(limitParam)
+        : 10;
+
+    if (
+      !Number.isSafeInteger(page) ||
+      page < 1 ||
+      !Number.isSafeInteger(limit) ||
+      limit < 1
+    ) {
+      res.status(400).json({
+        message: "Parameter page dan limit harus berupa bilangan bulat positif",
+      });
+      return;
+    }
+
     const result = await getOrganizerEventAttendeesService(
       BigInt(organizerId),
       BigInt(eventId),
+      page,
+      limit,
     );
 
     if (!result) {
@@ -210,6 +238,7 @@ export const getOrganizerEventAttendeesController = async (
     });
   }
 };
+
 export const organizerDashboardStatisticsController = async (
   req: Request,
   res: Response,

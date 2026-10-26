@@ -4,14 +4,14 @@ import type { ChangePasswordSchema, UpdateProfileSchema } from "@/schema/auth";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
-import ChangePasswordModal from "@/components/profile/ChangePasswordModal";
-import ConfirmChangePassword from "@/components/profile/ConfirmChangePassword";
-import ConfirmEditProfile from "@/components/profile/ConfirmEditProfile";
-import ConfirmLogout from "@/components/profile/ConfirmLogout";
-import EditProfileForm from "@/components/profile/EditProfileForm";
-import LogoutButton from "@/components/profile/LogoutButton";
 import { usePoints } from "@/hooks/usePoint";
 import { usePointHistory } from "@/hooks/usePointHistory";
+import ChangePasswordModal from "@/components/ui/ChangePasswordModal";
+import ConfirmChangePassword from "@/components/ui/ConfirmChangePassword";
+import ConfirmEditProfile from "@/components/ui/ConfirmEditProfile";
+import ConfirmLogout from "@/components/ui/ConfirmLogout";
+import EditProfileForm from "@/components/ui/EditProfileForm";
+import LogoutButton from "@/components/ui/LogoutButton";
 
 function ProfilePage() {
   const navigate = useNavigate();
@@ -215,8 +215,6 @@ function ProfilePage() {
 
       <div className="mx-auto max-w-3xl">
         <div className="mb-6">
-          <p className="text-sm font-medium text-blue-600">Account</p>
-
           <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">
             Profile
           </h1>
@@ -366,97 +364,107 @@ function ProfilePage() {
                   </p>
                 </div>
 
-                <div className="rounded-xl border p-4">
-                  <p className="text-sm text-gray-500">Saldo Poin</p>
+                {user.role === "CUSTOMER" && (
+                  <>
+                    {/* Saldo Poin */}
+                    <div className="rounded-xl border p-4">
+                      <p className="text-sm text-gray-500">Saldo Poin</p>
 
-                  {isPointsLoading ? (
-                    <p>Memuat saldo poin...</p>
-                  ) : isPointsError ? (
-                    <p>Saldo poin gagal dimuat.</p>
-                  ) : (
-                    <p className="text-2xl font-bold">
-                      {Number(points ?? "0").toLocaleString("id-ID")} poin
-                    </p>
-                  )}
-                </div>
-
-                <section className="rounded-xl border p-4 sm:col-span-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <h2 className="text-lg font-semibold text-slate-900">
-                        Riwayat Poin
-                      </h2>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Transaksi poin terbaru
-                      </p>
+                      {isPointsLoading ? (
+                        <p>Memuat saldo poin...</p>
+                      ) : isPointsError ? (
+                        <p>Saldo poin gagal dimuat.</p>
+                      ) : (
+                        <p className="text-2xl font-bold">
+                          {Number(points ?? "0").toLocaleString("id-ID")} poin
+                        </p>
+                      )}
                     </div>
 
-                    <Link
-                      to="/profile/points"
-                      className="shrink-0 text-sm font-semibold text-blue-600 hover:text-blue-700"
-                    >
-                      Lihat Semua →
-                    </Link>
-                  </div>
-                  {isHistoryLoading ? (
-                    <p className="mt-4 text-sm text-slate-500">
-                      Memuat riwayat poin...
-                    </p>
-                  ) : isHistoryError ? (
-                    <p className="mt-4 text-sm text-red-500">
-                      Riwayat poin gagal dimuat.
-                    </p>
-                  ) : !pointHistory?.length ? (
-                    <p className="mt-4 text-sm text-slate-500">
-                      Belum ada riwayat poin.
-                    </p>
-                  ) : (
-                    <div className="mt-3 divide-y divide-slate-100">
-                      {pointHistory.slice(0, 3).map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center justify-between gap-3 py-3"
-                        >
-                          <div className="min-w-0">
-                            <p className="font-medium text-slate-900">
-                              {item.type}
-                            </p>
-                            <p className="mt-1 text-xs text-slate-500">
-                              {new Date(item.createdAt).toLocaleDateString(
-                                "id-ID",
-                              )}
-                            </p>
-                          </div>
-
-                          <p className="shrink-0 text-sm font-semibold text-slate-900">
-                            {Number(item.amount).toLocaleString("id-ID")} poin
+                    {/* Riwayat Poin */}
+                    <section className="rounded-xl border p-4 sm:col-span-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <h2 className="text-lg font-semibold text-slate-900">
+                            Riwayat Poin
+                          </h2>
+                          <p className="mt-1 text-sm text-slate-500">
+                            Transaksi poin terbaru
                           </p>
                         </div>
-                      ))}
+
+                        <Link
+                          to="/profile/points"
+                          className="shrink-0 text-sm font-semibold text-blue-600 hover:text-blue-700"
+                        >
+                          Lihat Semua →
+                        </Link>
+                      </div>
+
+                      {isHistoryLoading ? (
+                        <p className="mt-4 text-sm text-slate-500">
+                          Memuat riwayat poin...
+                        </p>
+                      ) : isHistoryError ? (
+                        <p className="mt-4 text-sm text-red-500">
+                          Riwayat poin gagal dimuat.
+                        </p>
+                      ) : !pointHistory?.length ? (
+                        <p className="mt-4 text-sm text-slate-500">
+                          Belum ada riwayat poin.
+                        </p>
+                      ) : (
+                        <div className="mt-3 divide-y divide-slate-100">
+                          {pointHistory.slice(0, 3).map((item) => (
+                            <div
+                              key={item.id}
+                              className="flex items-center justify-between gap-3 py-3"
+                            >
+                              <div className="min-w-0">
+                                <p className="font-medium text-slate-900">
+                                  {item.type}
+                                </p>
+                                <p className="mt-1 text-xs text-slate-500">
+                                  {new Date(item.createdAt).toLocaleDateString(
+                                    "id-ID",
+                                  )}
+                                </p>
+                              </div>
+
+                              <p className="shrink-0 text-sm font-semibold text-slate-900">
+                                {Number(item.amount).toLocaleString("id-ID")}{" "}
+                                poin
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+
+                    {/* Referral Code */}
+                    <div className="rounded-xl bg-slate-50 p-4 sm:col-span-2">
+                      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                        Referral Code
+                      </p>
+
+                      <div className="mt-2 flex items-center justify-between gap-3">
+                        <p className="font-mono font-semibold tracking-wider text-blue-600">
+                          {user.referralCode}
+                        </p>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigator.clipboard.writeText(user.referralCode)
+                          }
+                          className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
+                        >
+                          Copy
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </section>
-
-                <div className="rounded-xl bg-slate-50 p-4 sm:col-span-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                    Referral Code
-                  </p>
-
-                  <div className="mt-2 flex items-center justify-between gap-3">
-                    <p className="font-mono font-semibold tracking-wider text-blue-600">
-                      {user.referralCode}
-                    </p>
-
-                    <button
-                      onClick={() =>
-                        navigator.clipboard.writeText(user.referralCode)
-                      }
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
-                    >
-                      Copy
-                    </button>
-                  </div>
-                </div>
+                  </>
+                )}
               </div>
             )}
             <div className="mt-8 border-t border-slate-100 pt-6">

@@ -1,10 +1,3 @@
-import type {
-  GetOrganizerTransactionsParams,
-  OrganizerDashboardResponse,
-  OrganizerTransaction,
-  OrganizerTransactionResponse,
-  TransactionStatus,
-} from "@/types/organizerDashboard";
 import axios from "axios";
 
 export const api = axios.create({
@@ -46,57 +39,3 @@ api.interceptors.response.use(
     return Promise.reject(error);
   },
 );
-
-export const getOrganizerDashboard =
-  async (): Promise<OrganizerDashboardResponse> => {
-    const response = await api.get<OrganizerDashboardResponse>(
-      "/organizer/dashboard",
-    );
-
-    return response.data;
-  };
-
-export const getOrganizerTransactions = async (
-  params: GetOrganizerTransactionsParams,
-): Promise<OrganizerTransactionResponse> => {
-  const response = await api.get<OrganizerTransactionResponse>(
-    "/organizer/transactions",
-    { params },
-  );
-
-  return response.data;
-};
-
-export const getOrganizerTransactionDetail = async (
-  transactionId: string,
-): Promise<{ message: string; data: OrganizerTransaction }> => {
-  const response = await api.get<{
-    message: string;
-    data: OrganizerTransaction;
-  }>(`/organizer/transactions/${transactionId}`);
-
-  return response.data;
-};
-
-export const acceptOrganizerTransaction = async (transactionId: string) => {
-  const response = await api.put<{
-    message: string;
-    data: {
-      id: string;
-      status: TransactionStatus;
-    };
-  }>(`/organizer/transactions/${transactionId}/accept`);
-
-  return response.data;
-};
-export const rejectOrganizerTransaction = async (transactionId: string) => {
-  const response = await api.put<{
-    message: string;
-    data: {
-      id: string;
-      status: TransactionStatus;
-    };
-  }>(`/organizer/transactions/${transactionId}/reject`);
-
-  return response.data;
-};

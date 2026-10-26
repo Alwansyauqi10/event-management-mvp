@@ -1,4 +1,4 @@
-import ConfirmLogout from "@/components/profile/ConfirmLogout";
+import ConfirmLogout from "@/components/ui/ConfirmLogout";
 import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router";
 

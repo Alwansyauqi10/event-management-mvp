@@ -563,7 +563,13 @@ export const getOrganizerEventsService = async (
 export const getOrganizerEventAttendeesService = async (
   organizerId: bigint,
   eventId: bigint,
+  page = 1,
+  limit = 10,
 ) => {
+  // Pastikan halaman dan limit valid.
+  const currentPage = Math.max(1, Math.floor(page) || 1);
+  const pageSize = Math.min(50, Math.max(1, Math.floor(limit) || 10));
+
   // Pastikan event memang milik organizer yang login.
   const event = await prisma.event.findFirst({
     where: {
@@ -583,7 +589,8 @@ export const getOrganizerEventAttendeesService = async (
     return null;
   }
 
-  // Ambil transaksi yang sudah dikonfirmasi selesai.
+  // Ambil seluruh transaksi DONE untuk menghitung statistik
+  // dan menggabungkan transaksi dari customer yang sama.
   const transactions = await prisma.eventTransaction.findMany({
     where: {
       eventId,
@@ -609,7 +616,6 @@ export const getOrganizerEventAttendeesService = async (
     },
   });
 
-  // Gabungkan beberapa transaksi dari customer yang sama.
   const attendeesMap = new Map<
     string,
     {
@@ -644,26 +650,41 @@ export const getOrganizerEventAttendeesService = async (
     }
   }
 
-  const attendees = Array.from(attendeesMap.values()).map((attendee) => ({
-    ...attendee,
-    totalPaid: attendee.totalPaid.toString(),
-  }));
+  // Susun peserta secara konsisten sebelum pagination.
+  const allAttendees = Array.from(attendeesMap.values()).sort((a, b) =>
+    a.name.localeCompare(b.name, "id"),
+  );
+
+  const totalAttendees = allAttendees.length;
+  const totalPages = Math.ceil(totalAttendees / pageSize);
+  const skip = (currentPage - 1) * pageSize;
+
+  // Pagination hanya diterapkan pada daftar yang ditampilkan.
+  const paginatedAttendees = allAttendees
+    .slice(skip, skip + pageSize)
+    .map((attendee) => ({
+      ...attendee,
+      totalPaid: attendee.totalPaid.toString(),
+    }));
 
   return {
     event: {
       ...event,
       id: event.id.toString(),
     },
-    data: attendees,
+    data: paginatedAttendees,
     meta: {
-      totalAttendees: attendees.length,
-      totalTickets: attendees.reduce(
+      totalAttendees,
+      totalTickets: allAttendees.reduce(
         (total, attendee) => total + attendee.ticketQuantity,
         0,
       ),
-      totalRevenue: attendees
-        .reduce((total, attendee) => total + BigInt(attendee.totalPaid), 0n)
+      totalRevenue: allAttendees
+        .reduce((total, attendee) => total + attendee.totalPaid, 0n)
         .toString(),
+      page: currentPage,
+      limit: pageSize,
+      totalPages,
     },
   };
 };

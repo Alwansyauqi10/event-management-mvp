@@ -34,7 +34,6 @@ import PaymentPage from "./pages/PaymentPage";
 import TransactionHistoryPage from "./pages/TransactionHistoryPage";
 import CheckInPage from "./pages/CheckInPage";
 import EventReviewsPage from "./pages/EventReviewsPage";
-import OrganizerVouPchersPage from "./pages/OrganizerVouchersPage";
 import OrganizerVouchersPage from "./pages/OrganizerVouchersPage";
 
 const queryClient = new QueryClient();

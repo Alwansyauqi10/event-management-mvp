@@ -437,6 +437,7 @@ export const rejectOrganizerTransactionService = async ({
         id: true,
         userId: true,
         eventId: true,
+        voucherId: true,
         transactionCode: true,
         status: true,
         user: {
@@ -485,6 +486,19 @@ export const rejectOrganizerTransactionService = async ({
         "Status transaksi sudah berubah. Silakan muat ulang data",
         409,
       );
+    }
+
+    // Kembalikan kuota voucher jika transaksi menggunakan voucher.
+    if (transaction.voucherId !== null) {
+      await tx.voucher.updateMany({
+        where: {
+          id: transaction.voucherId,
+          usedQuantity: { gt: 0 },
+        },
+        data: {
+          usedQuantity: { decrement: 1 },
+        },
+      });
     }
 
     // 1. Pulihkan stok tiket.

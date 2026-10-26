@@ -3,11 +3,9 @@ import { api } from "@/lib/axios";
 
 export interface CreateTransactionInput {
   eventId: string;
-  tickets: {
-    ticketId: string;
-    quantity: number;
-  }[];
-  pointsToUse?: string;
+  tickets: { ticketId: string; quantity: number }[];
+  pointsToUse?: string | number;
+  voucherCode?: string;
 }
 
 export interface CreatedTransaction {

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { api } from "@/lib/axios";
@@ -65,15 +64,16 @@ export default function CheckoutPage() {
   const [pointBalance, setPointBalance] = useState("0");
   const [isLoadingPoints, setIsLoadingPoints] = useState(true);
   const [pointBalanceError, setPointBalanceError] = useState("");
+  const [voucherCode, setVoucherCode] = useState("");
+
 
   useEffect(() => {
     let active = true;
 
     const fetchPointBalance = async () => {
       try {
-        const response = await api.get<PointBalanceResponse>(
-          "/referral/points",
-        );
+        const response =
+          await api.get<PointBalanceResponse>("/referral/points");
 
         if (!active) return;
 
@@ -143,18 +143,16 @@ export default function CheckoutPage() {
     0n,
   );
 
-  const requestedPoints =
-    /^\d+$/.test(pointsToUse) ? BigInt(pointsToUse) : 0n;
+  const requestedPoints = /^\d+$/.test(pointsToUse) ? BigInt(pointsToUse) : 0n;
 
-  const availablePoints =
-    /^\d+$/.test(pointBalance) ? BigInt(pointBalance) : 0n;
+  const availablePoints = /^\d+$/.test(pointBalance)
+    ? BigInt(pointBalance)
+    : 0n;
 
   const pointsExceedBalance = requestedPoints > availablePoints;
   const pointsExceedSubtotal = requestedPoints > subtotal;
 
-  const pointDiscount = pointsExceedSubtotal
-    ? subtotal
-    : requestedPoints;
+  const pointDiscount = pointsExceedSubtotal ? subtotal : requestedPoints;
 
   const totalAfterPoints = subtotal - pointDiscount;
 
@@ -189,6 +187,7 @@ export default function CheckoutPage() {
           quantity: ticket.quantity,
         })),
         pointsToUse: requestedPoints.toString(),
+        voucherCode: voucherCode.trim() || undefined,
       });
 
       const transaction = response.transaction;
@@ -200,8 +199,7 @@ export default function CheckoutPage() {
             transactionCode: transaction.transactionCode,
             status: transaction.status,
             totalAmount: transaction.totalAmount,
-            paymentProofDeadline:
-              transaction.paymentProofDeadline ?? null,
+            paymentProofDeadline: transaction.paymentProofDeadline ?? null,
           },
         },
       });
@@ -240,12 +238,8 @@ export default function CheckoutPage() {
               />
             )}
 
-            <h2 className="text-xl font-bold text-slate-900">
-              {event.name}
-            </h2>
-            <p className="mt-2 text-sm text-slate-600">
-              {event.location}
-            </p>
+            <h2 className="text-xl font-bold text-slate-900">{event.name}</h2>
+            <p className="mt-2 text-sm text-slate-600">{event.location}</p>
             <p className="mt-1 text-sm text-slate-600">
               {new Date(event.startDate).toLocaleDateString("id-ID", {
                 day: "numeric",
@@ -256,9 +250,7 @@ export default function CheckoutPage() {
 
             <div className="my-6 border-t border-slate-200" />
 
-            <h3 className="font-semibold text-slate-900">
-              Selected tickets
-            </h3>
+            <h3 className="font-semibold text-slate-900">Selected tickets</h3>
 
             <div className="mt-4 space-y-4">
               {tickets.map((ticket) => (
@@ -267,17 +259,14 @@ export default function CheckoutPage() {
                   className="flex items-start justify-between gap-4"
                 >
                   <div>
-                    <p className="font-medium text-slate-800">
-                      {ticket.name}
-                    </p>
+                    <p className="font-medium text-slate-800">{ticket.name}</p>
                     <p className="mt-1 text-sm text-slate-500">
                       {formatPrice(ticket.price)} × {ticket.quantity}
                     </p>
                   </div>
                   <p className="shrink-0 font-semibold text-slate-900">
                     {formatPrice(
-                      BigInt(String(ticket.price)) *
-                        BigInt(ticket.quantity),
+                      BigInt(String(ticket.price)) * BigInt(ticket.quantity),
                     )}
                   </p>
                 </div>
@@ -286,9 +275,7 @@ export default function CheckoutPage() {
           </section>
 
           <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-6">
-            <h2 className="text-lg font-bold text-slate-900">
-              Order Summary
-            </h2>
+            <h2 className="text-lg font-bold text-slate-900">Order Summary</h2>
 
             <div className="mt-5 flex justify-between gap-4 text-sm text-slate-600">
               <span>Total tickets</span>
@@ -306,14 +293,37 @@ export default function CheckoutPage() {
 
             <div className="my-5 border-t border-slate-200" />
 
+            <section className="mb-5">
+              <label
+                htmlFor="voucherCode"
+                className="block text-sm font-semibold text-slate-900"
+              >
+                Kode Voucher
+              </label>
+
+              <input
+                id="voucherCode"
+                type="text"
+                value={voucherCode}
+                onChange={(event) => {
+                  setVoucherCode(event.target.value.toUpperCase());
+                  setErrorMessage("");
+                }}
+                placeholder="Masukkan kode voucher"
+                maxLength={100}
+                autoComplete="off"
+                className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 uppercase text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+
+              <p className="mt-1 text-xs text-slate-500">
+                Kode akan divalidasi saat transaksi dibuat.
+              </p>
+            </section>
+
             <section>
               <div className="flex items-center justify-between gap-3">
-                <h3 className="font-semibold text-slate-900">
-                  Use Points
-                </h3>
-                <span className="text-xs text-slate-500">
-                  1 point = Rp1
-                </span>
+                <h3 className="font-semibold text-slate-900">Use Points</h3>
+                <span className="text-xs text-slate-500">1 point = Rp1</span>
               </div>
 
               <p className="mt-2 text-sm text-slate-600">
@@ -405,14 +415,12 @@ export default function CheckoutPage() {
               }
               className="mt-6 w-full rounded-xl bg-blue-600 px-5 py-3.5 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
             >
-              {isSubmitting
-                ? "Creating Transaction..."
-                : "Continue to Payment"}
+              {isSubmitting ? "Creating Transaction..." : "Continue to Payment"}
             </button>
 
             <p className="mt-3 text-xs leading-5 text-slate-500">
-              Ticket availability, point balance, and final payment amount
-              are verified by the server.
+              Ticket availability, point balance, and final payment amount are
+              verified by the server.
             </p>
           </aside>
         </div>

@@ -15,6 +15,7 @@ type CreateTransactionInput = {
     quantity: number;
   }[];
   pointsToUse?: string | number;
+   voucherCode?: string;
 };
 
 const POINT_REFERENCE_TYPE = "EVENT_TRANSACTION";
@@ -272,22 +273,114 @@ export const createTransactionService = async (
       throw new ApiError("Sisa kursi event tidak mencukupi", 400);
     }
 
-    const pointValue = BigInt(CHECKOUT_CONFIG.POINT_VALUE_IN_RUPIAH);
+    
+const pointValue = BigInt(CHECKOUT_CONFIG.POINT_VALUE_IN_RUPIAH);
+
+const maxDiscount =
+  (subTotal *
+    BigInt(CHECKOUT_CONFIG.MAX_TOTAL_DISCOUNT_PERCENT)) /
+  100n;
+
+let voucherId: bigint | null = null;
+let voucherDiscount = 0n;
+
+const voucherCode = input.voucherCode?.trim().toUpperCase();
+
+if (voucherCode) {
+  if (voucherCode.length > 100) {
+    throw new ApiError("Kode voucher tidak valid", 400);
+  }
+
+  const voucher = await tx.voucher.findFirst({
+    where: {
+      eventId,
+      code: voucherCode,
+      deletedAt: null,
+      startAt: { lte: now },
+      endAt: { gt: now },
+    },
+  });
+
+  if (!voucher) {
+    throw new ApiError(
+      "Kode voucher tidak valid atau sudah kedaluwarsa",
+      400,
+    );
+  }
+
+  if (voucher.usedQuantity >= voucher.quota) {
+    throw new ApiError("Kuota voucher sudah habis", 400);
+  }
+
+  if (voucher.discountType === "PERCENTAGE") {
+    voucherDiscount =
+      (subTotal * voucher.discountValue) / 100n;
+
+    if (voucher.maxDiscount !== null) {
+      voucherDiscount =
+        voucherDiscount > voucher.maxDiscount
+          ? voucher.maxDiscount
+          : voucherDiscount;
+    }
+  } else {
+    voucherDiscount = voucher.discountValue;
+  }
+
+  // Diskon voucher tidak boleh melebihi subtotal
+  // atau batas maksimum diskon checkout.
+  if (voucherDiscount > subTotal) {
+    voucherDiscount = subTotal;
+  }
+
+  if (voucherDiscount > maxDiscount) {
+    voucherDiscount = maxDiscount;
+  }
+
+  // Reservasi kuota secara atomik untuk mencegah
+  // dua checkout memakai kuota terakhir bersamaan.
+  const reservedVoucher = await tx.voucher.updateMany({
+    where: {
+      id: voucher.id,
+      deletedAt: null,
+      usedQuantity: { lt: voucher.quota },
+      startAt: { lte: now },
+      endAt: { gt: now },
+    },
+    data: {
+      usedQuantity: { increment: 1 },
+    },
+  });
+
+  if (reservedVoucher.count !== 1) {
+    throw new ApiError(
+      "Kuota voucher baru saja habis. Silakan coba lagi",
+      409,
+    );
+  }
+
+  voucherId = voucher.id;
+}
+
     const pointDiscount = pointsToUse * pointValue;
+    const remainingDiscountLimit = maxDiscount - voucherDiscount;
 
-    if (pointDiscount > subTotal) {
-      throw new ApiError("Diskon poin melebihi subtotal", 400);
+    if (pointDiscount > subTotal - voucherDiscount) {
+      throw new ApiError(
+        "Total diskon melebihi subtotal",
+        400,
+      );
     }
 
-    // Batasi diskon total sesuai konfigurasi.
-    const maxDiscount =
-      (subTotal * BigInt(CHECKOUT_CONFIG.MAX_TOTAL_DISCOUNT_PERCENT)) / 100n;
-
-    if (pointDiscount > maxDiscount) {
-      throw new ApiError("Diskon poin melebihi batas maksimum", 400);
+    if (pointDiscount > remainingDiscountLimit) {
+      throw new ApiError(
+        "Total diskon poin dan voucher melebihi batas maksimum",
+        400,
+      );
     }
 
-    const totalAmount = subTotal - pointDiscount;
+    const totalAmount =
+      subTotal - voucherDiscount - pointDiscount;
+
 
     // Cadangkan stok tiket secara kondisional agar tidak overselling.
     for (const item of tickets) {
@@ -335,10 +428,11 @@ export const createTransactionService = async (
         transactionCode: `TRX-${randomUUID()}`,
         userId: customerId,
         eventId,
+        voucherId,
         status: "WAITING_FOR_PAYMENT",
         subTotal,
         pointDiscount,
-        voucherDiscount: 0n,
+        voucherDiscount,
         couponDiscount: 0n,
         totalAmount,
         paymentProofDeadline: paymentDeadline,

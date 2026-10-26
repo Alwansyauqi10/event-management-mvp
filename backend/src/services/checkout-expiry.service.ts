@@ -1,6 +1,55 @@
 
 import cron from "node-cron";
 import { prisma } from "../lib/prisma.js";
+import {
+  Prisma,
+  PointTransactionType,
+} from "../generated/prisma/client.js";
+
+const POINT_REFERENCE_TYPE = "EVENT_TRANSACTION";
+const POINT_REFUND_REFERENCE_TYPE = "EVENT_TRANSACTION_REFUND";
+
+const refundPointsForTransaction = async (
+  tx: Prisma.TransactionClient,
+  transactionId: bigint,
+  userId: bigint,
+): Promise<void> => {
+  const existingRefund = await tx.pointTransaction.findFirst({
+    where: {
+      userId,
+      type: PointTransactionType.REFUND,
+      referenceType: POINT_REFUND_REFERENCE_TYPE,
+      referenceId: transactionId,
+    },
+    select: { id: true },
+  });
+
+  // Mencegah refund ganda jika transaksi sudah pernah dikembalikan.
+  if (existingRefund) return;
+
+  const debits = await tx.pointTransaction.findMany({
+    where: {
+      userId,
+      type: PointTransactionType.DEBIT,
+      referenceType: POINT_REFERENCE_TYPE,
+      referenceId: transactionId,
+    },
+  });
+
+  for (const debit of debits) {
+    await tx.pointTransaction.create({
+      data: {
+        userId,
+        type: PointTransactionType.REFUND,
+        amount: debit.amount,
+        remainingAmount: debit.amount,
+        referenceType: POINT_REFUND_REFERENCE_TYPE,
+        referenceId: transactionId,
+        expiredAt: debit.expiredAt,
+      },
+    });
+  }
+};
 
 export async function expireUnpaidTransactions(): Promise<void> {
   const now = new Date();
@@ -14,6 +63,8 @@ export async function expireUnpaidTransactions(): Promise<void> {
     },
     select: {
       id: true,
+      userId: true,
+      eventId: true,
     },
   });
 
@@ -34,7 +85,7 @@ export async function expireUnpaidTransactions(): Promise<void> {
           },
         });
 
-        // Jika status sudah berubah, stok tidak boleh dikembalikan lagi.
+        // Jika status sudah berubah, jangan kembalikan stok atau poin lagi.
         if (updated.count !== 1) return;
 
         const items = await tx.transactionItem.findMany({
@@ -68,12 +119,7 @@ export async function expireUnpaidTransactions(): Promise<void> {
         if (totalQuantity > 0) {
           await tx.event.update({
             where: {
-              id: (
-                await tx.eventTransaction.findUniqueOrThrow({
-                  where: { id: transaction.id },
-                  select: { eventId: true },
-                })
-              ).eventId,
+              id: transaction.eventId,
             },
             data: {
               availableSeats: {
@@ -82,6 +128,13 @@ export async function expireUnpaidTransactions(): Promise<void> {
             },
           });
         }
+
+        // Refund poin tetap satu paket dengan perubahan status dan stok.
+        await refundPointsForTransaction(
+          tx,
+          transaction.id,
+          transaction.userId,
+        );
       });
 
       console.log(

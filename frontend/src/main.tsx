@@ -63,7 +63,10 @@ const router = createBrowserRouter([
         path: "/",
         element: <Home />,
       },
-
+      {
+        path: "/events/:id",
+        element: <EventDetailPage />,
+      },
       {
         element: <RoleProtectedRoute allowedRole="CUSTOMER" />,
         children: [
@@ -79,10 +82,7 @@ const router = createBrowserRouter([
             path: "/profile/points",
             element: <PointHistoryPage />,
           },
-          {
-            path: "/events/:id",
-            element: <EventDetailPage />,
-          },
+
           {
             path: "/payment/:transactionId",
             element: <PaymentPage />,

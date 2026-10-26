@@ -325,7 +325,7 @@ export default function OrganizerEventReviewsPage() {
 
                             <div className="mt-4">
                               {review.comment ? (
-                                <p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-600">
+                                <p className="whitespace-pre-wrap wrap-break-words text-sm leading-6 text-slate-600">
                                   {review.comment}
                                 </p>
                               ) : (

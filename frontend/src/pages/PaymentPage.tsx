@@ -220,15 +220,8 @@ export default function PaymentPage() {
     !isUploading;
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 pb-16 pt-28">
+    <main className="min-h-screen bg-slate-50 px-6 pb-16 pt-16">
       <div className="mx-auto max-w-2xl">
-        <button
-          type="button"
-          onClick={() => navigate("/")}
-          className="mb-6 text-sm font-medium text-blue-600 hover:text-blue-700"
-        >
-          ← Kembali ke Home
-        </button>
 
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">
           Payment

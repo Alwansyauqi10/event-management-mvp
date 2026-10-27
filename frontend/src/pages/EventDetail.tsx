@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router";
+import { useParams, useNavigate, Link } from "react-router";
 import { useEventById } from "@/hooks/useEvent";
 import { useEventTickets } from "@/hooks/useEventTickets";
 
@@ -154,6 +154,32 @@ function EventDetailPage() {
             </div>
           </div>
         </div>
+
+        {event.organizer && (
+          <Link
+            to={`/organizers/${event.organizer.id}`}
+            className="group mt-16 inline-flex max-w-full items-center gap-3 transition"
+          >
+            {event.organizer.profilePicture ? (
+              <img
+                src={event.organizer.profilePicture}
+                alt={event.organizer.name}
+                className="h-11 w-11 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-50 text-lg font-bold text-blue-700">
+                {event.organizer.name.charAt(0).toUpperCase()}
+              </div>
+            )}
+
+            <div className="min-w-0">
+              <p className="text-xs text-slate-500">Organized by</p>
+              <p className="font-semibold text-slate-900 transition group-hover:text-blue-700">
+                {event.organizer.name}
+              </p>
+            </div>
+          </Link>
+        )}
 
         {/* About event */}
         <section className="mt-16 border-t border-slate-200 pt-12">

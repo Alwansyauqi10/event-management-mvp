@@ -2,13 +2,16 @@ import { api } from "@/lib/axios";
 
 export interface CheckInAttendee {
   transactionId: string;
+  transactionCode: string;
   userId: string;
   name: string;
   email: string;
   ticketQuantity: number;
+  ticketDetails: CheckInTicketDetail[];
   status: "CHECKED_IN" | "NOT_CHECKED_IN";
   checkedInAt: string | null;
 }
+
 
 export interface CheckInEvent {
   id: string;
@@ -35,17 +38,6 @@ export interface CheckInAttendeesResponse {
 export interface CheckInTicketDetail {
   name: string;
   quantity: number;
-}
-
-export interface CheckInAttendee {
-  transactionId: string;
-  userId: string;
-  name: string;
-  email: string;
-  ticketQuantity: number;
-  ticketDetails: CheckInTicketDetail[];
-  status: "CHECKED_IN" | "NOT_CHECKED_IN";
-  checkedInAt: string | null;
 }
 
 export const getCheckInAttendees = async (

@@ -48,15 +48,12 @@ export default function OrganizerEventHeader({
     <div className="space-y-5">
       <Link
         to="/organizer/events"
-        className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-slate-900"
+        className="inline-flex items-center gap-2 px-2 text-sm font-medium text-blue-600 transition-colors duration-200 hover:text-blue-800 hover:underline"
       >
-        <span aria-hidden="true">←</span> Kembali ke Event Saya
+        Kembali ke Event Saya
       </Link>
       <header className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="p-5 sm:p-7">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-600">
-            Organizer Panel / Event Management
-          </p>
           <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
             {title}
           </h1>

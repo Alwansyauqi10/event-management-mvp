@@ -2,6 +2,7 @@ import express from "express";
 import {
   pointController,
   pointHistoryController,
+  userCouponsController,
 } from "../controllers/referral.controller.js";
 import { verifyToken } from "../middleware/auth.middleware.js";
 const referralRoutes = express.Router();
@@ -16,5 +17,9 @@ referralRoutes.get(
   verifyToken(process.env.JWT_SECRET!),
   pointHistoryController,
 );
-
+referralRoutes.get(
+  "/coupons",
+  verifyToken(process.env.JWT_SECRET!),
+  userCouponsController,
+);
 export { referralRoutes };

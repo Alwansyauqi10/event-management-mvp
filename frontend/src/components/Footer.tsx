@@ -4,7 +4,7 @@ import { Mail } from "lucide-react";
 
 function Footer() {
   return (
-    <footer className="bg-haya-navy text-white grow">
+    <footer className="mt-8 bg-haya-navy text-white">
       <div className="mx-auto max-w-7xl px-6 py-7">
         {/* Top */}
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">

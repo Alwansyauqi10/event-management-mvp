@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useProfile } from "@/hooks/useProfile";
@@ -129,8 +128,7 @@ function Navbar() {
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-lg font-bold text-haya-blue">
-                            {user?.name?.trim()?.charAt(0).toUpperCase() ??
-                              "U"}
+                            {user?.name?.trim()?.charAt(0).toUpperCase() ?? "U"}
                           </div>
                         )}
                       </div>
@@ -195,6 +193,35 @@ function Navbar() {
                           />
                         </svg>
                         Poin Saya
+                      </Link>
+
+                      {/* Kupon Saya */}
+                      <Link
+                        to="/profile/coupons"
+                        role="menuitem"
+                        onClick={closeMenus}
+                        className={accountLinkClass}
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.7"
+                          className="h-5 w-5 shrink-0"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M4 8a2 2 0 0 0 0 4v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4a2 2 0 0 1 0-4V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v2Z"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M9 8v1m0 3v1m0 3v1m4-8h3m-3 4h3"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        Kupon Saya
                       </Link>
 
                       {/* Riwayat transaksi */}
@@ -349,6 +376,16 @@ function Navbar() {
                   className={accountLinkClass}
                 >
                   Poin Saya
+                </Link>
+
+                <Link
+                  to="/profile/coupons"
+                  role="menuitem"
+                  onClick={closeMenus}
+                  className={accountLinkClass}
+                >
+                  <span aria-hidden="true">🎟️</span>
+                  Kupon Saya
                 </Link>
 
                 <Link

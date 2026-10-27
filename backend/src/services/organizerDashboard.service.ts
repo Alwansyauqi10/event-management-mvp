@@ -437,6 +437,8 @@ export const rejectOrganizerTransactionService = async ({
         id: true,
         userId: true,
         eventId: true,
+        voucherId: true,
+        couponId: true,
         transactionCode: true,
         status: true,
         user: {
@@ -485,6 +487,32 @@ export const rejectOrganizerTransactionService = async ({
         "Status transaksi sudah berubah. Silakan muat ulang data",
         409,
       );
+    }
+
+    // Kembalikan kuota voucher jika transaksi menggunakan voucher.
+    if (transaction.voucherId !== null) {
+      await tx.voucher.updateMany({
+        where: {
+          id: transaction.voucherId,
+          usedQuantity: { gt: 0 },
+        },
+        data: {
+          usedQuantity: { decrement: 1 },
+        },
+      });
+    }
+
+    // Kembalikan Coupon jika transaksi menggunakan Coupon.
+    if (transaction.couponId !== null) {
+      await tx.coupon.updateMany({
+        where: {
+          id: transaction.couponId,
+          userId: transaction.userId,
+        },
+        data: {
+          usedAt: null,
+        },
+      });
     }
 
     // 1. Pulihkan stok tiket.

@@ -17,11 +17,6 @@ referralRoutes.get(
   verifyToken(process.env.JWT_SECRET!),
   pointHistoryController,
 );
-referralRoutes.get(
-  "/coupons",
-  verifyToken(process.env.JWT_SECRET!),
-  userCouponsController,
-);
 
 referralRoutes.get(
   "/my-coupons",

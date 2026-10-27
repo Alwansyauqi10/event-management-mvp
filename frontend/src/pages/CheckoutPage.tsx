@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { api } from "@/lib/axios";
@@ -218,9 +217,7 @@ function CheckoutPage() {
     0n,
   );
 
-  const requestedPoints = /^\d+$/.test(pointsToUse)
-    ? BigInt(pointsToUse)
-    : 0n;
+  const requestedPoints = /^\d+$/.test(pointsToUse) ? BigInt(pointsToUse) : 0n;
 
   const availablePoints = /^\d+$/.test(pointBalance)
     ? BigInt(pointBalance)
@@ -285,8 +282,7 @@ function CheckoutPage() {
             transactionCode: transaction.transactionCode,
             status: transaction.status,
             totalAmount: transaction.totalAmount,
-            paymentProofDeadline:
-              transaction.paymentProofDeadline ?? null,
+            paymentProofDeadline: transaction.paymentProofDeadline ?? null,
           },
         },
       });
@@ -347,7 +343,7 @@ function CheckoutPage() {
                 className="h-52 w-full object-cover sm:h-64"
               />
             ) : (
-              <div className="flex h-44 items-center justify-center bg-gradient-to-br from-blue-50 to-slate-100 text-haya-blue">
+              <div className="flex h-44 items-center justify-center bg-linear-to-br from-blue-50 to-slate-100 text-haya-blue">
                 <TicketIcon />
               </div>
             )}
@@ -396,10 +392,7 @@ function CheckoutPage() {
                     aria-hidden="true"
                   >
                     <rect x="3" y="5" width="18" height="16" rx="2" />
-                    <path
-                      d="M16 3v4M8 3v4M3 10h18"
-                      strokeLinecap="round"
-                    />
+                    <path d="M16 3v4M8 3v4M3 10h18" strokeLinecap="round" />
                   </svg>
                   <span>{formatDate(event.startDate)}</span>
                 </div>
@@ -439,8 +432,7 @@ function CheckoutPage() {
 
                     <p className="shrink-0 text-right font-bold text-slate-900">
                       {formatPrice(
-                        BigInt(String(ticket.price)) *
-                          BigInt(ticket.quantity),
+                        BigInt(String(ticket.price)) * BigInt(ticket.quantity),
                       )}
                     </p>
                   </div>
@@ -592,9 +584,7 @@ function CheckoutPage() {
             {/* Points */}
             <section className="rounded-xl bg-slate-50 p-4">
               <div className="flex items-center justify-between gap-3">
-                <h3 className="text-sm font-bold text-slate-900">
-                  Use Points
-                </h3>
+                <h3 className="text-sm font-bold text-slate-900">Use Points</h3>
                 <span className="text-xs text-slate-500">1 point = Rp1</span>
               </div>
 
@@ -752,15 +742,12 @@ function CheckoutPage() {
                 aria-hidden="true"
               >
                 <rect x="5" y="10" width="14" height="11" rx="2" />
-                <path
-                  d="M8 10V7a4 4 0 1 1 8 0v3"
-                  strokeLinecap="round"
-                />
+                <path d="M8 10V7a4 4 0 1 1 8 0v3" strokeLinecap="round" />
               </svg>
               <p>
-                Ticket availability, voucher validity, coupon eligibility,
-                point balance, and the final payment amount are verified by
-                the server.
+                Ticket availability, voucher validity, coupon eligibility, point
+                balance, and the final payment amount are verified by the
+                server.
               </p>
             </div>
           </aside>

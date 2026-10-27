@@ -57,11 +57,11 @@ function Navbar() {
           <Link to="/" className={navLinkClass}>
             Events
           </Link>
-          <Link to="/" className={navLinkClass}>
-            Categories
-          </Link>
-          <Link to="/" className={navLinkClass}>
+          <Link to="/about" className={navLinkClass}>
             About
+          </Link>
+          <Link to="/contact" className={navLinkClass}>
+            Contact
           </Link>
         </div>
 

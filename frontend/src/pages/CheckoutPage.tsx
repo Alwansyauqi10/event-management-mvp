@@ -294,30 +294,9 @@ function CheckoutPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 pb-16 pt-28 sm:px-6">
+    <main className="min-h-screen bg-slate-50 px-4 pb-16 pt-16 sm:px-6">
       <div className="mx-auto max-w-6xl">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-haya-blue transition hover:text-haya-blue-light"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            className="h-4 w-4"
-            aria-hidden="true"
-          >
-            <path
-              d="m15 18-6-6 6-6M9 12h12"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          Back to event
-        </button>
-
+        
         <div className="mb-8">
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-haya-blue">
             Secure checkout

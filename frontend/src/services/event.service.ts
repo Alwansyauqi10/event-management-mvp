@@ -25,6 +25,12 @@ export type Event = {
     id: string;
     name: string;
   };
+    organizer?: {
+    id: string;
+    name: string;
+    profilePicture: string | null;
+    createdAt: string;
+  };
 };
 
 export type EventsResponse = {

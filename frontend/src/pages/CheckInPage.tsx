@@ -78,6 +78,7 @@ export default function CheckInPage() {
       attendee.name.toLocaleLowerCase("id-ID").includes(keyword) ||
       attendee.email.toLocaleLowerCase("id-ID").includes(keyword) ||
       attendee.transactionId.toLocaleLowerCase("id-ID").includes(keyword) ||
+      attendee.transactionCode.toLocaleLowerCase("id-ID").includes(keyword) ||
       attendee.ticketDetails.some((ticket) =>
         ticket.name.toLocaleLowerCase("id-ID").includes(keyword),
       )
@@ -242,6 +243,7 @@ export default function CheckInPage() {
                   <thead className="bg-slate-50 text-slate-500">
                     <tr>
                       <th className="px-4 py-3 font-medium">Peserta</th>
+                      <th className="px-4 py-3 font-medium">Kode Transaksi</th>
                       <th className="px-4 py-3 font-medium">Detail Tiket</th>
                       <th className="px-4 py-3 font-medium">Jumlah</th>
                       <th className="px-4 py-3 font-medium">Status</th>
@@ -270,6 +272,12 @@ export default function CheckInPage() {
                             <p className="mt-1 text-slate-500">
                               {attendee.email}
                             </p>
+                          </td>
+
+                          <td className="px-4 py-4">
+                            <span className="whitespace-nowrap font-mono text-sm font-semibold text-slate-900">
+                              {attendee.transactionCode}
+                            </span>
                           </td>
 
                           <td className="px-4 py-4">

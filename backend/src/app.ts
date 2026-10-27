@@ -11,6 +11,7 @@ import paymentProofRouter from "./routes/payment-proof.routes.js";
 import checkInRouter from "./routes/checkIn.routes.js";
 import eventReviewRouter from "./routes/eventReview.routes.js";
 import voucherRouter from "./routes/voucher.route.js";
+import organizerProfileRouter from "./routes/organizerProfile.routes.js";
 
 
 dotenv.config();
@@ -31,6 +32,7 @@ app.use("/organizer", organizerRouter);
 app.use("/organizer", checkInRouter);
 app.use("/transactions", paymentProofRouter);
 app.use("/event-reviews", eventReviewRouter);
+app.use("/organizers", organizerProfileRouter);
 
 
 app.get("/", (req, res) => {

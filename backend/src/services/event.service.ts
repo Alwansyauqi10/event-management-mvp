@@ -25,6 +25,7 @@ type CreateEventInput = {
   }[];
 };
 
+
 export const getEventsService = async ({
   search,
   category,
@@ -33,13 +34,13 @@ export const getEventsService = async ({
   limit,
 }: GetEventsParams) => {
   const where = {
-    ...(search && {
+    deletedAt: null,
+    ...(search?.trim() && {
       name: {
-        contains: search,
+        contains: search.trim(),
         mode: "insensitive" as const,
       },
     }),
-
     ...(category && {
       category: {
         name: {
@@ -48,7 +49,6 @@ export const getEventsService = async ({
         },
       },
     }),
-
     ...(location && {
       location: {
         contains: location,
@@ -59,9 +59,12 @@ export const getEventsService = async ({
 
   const [events, total] = await Promise.all([
     prisma.event.findMany({
-      where: { deletedAt: null },
+      where,
       include: {
         category: true,
+      },
+      orderBy: {
+        startDate: "asc",
       },
       skip: (page - 1) * limit,
       take: limit,
@@ -77,6 +80,7 @@ export const getEventsService = async ({
     total,
   };
 };
+
 
 export const getEventLocationsService = async () => {
   const locations = await prisma.event.findMany({
@@ -100,6 +104,14 @@ export const getEventByIdService = async (id: bigint) => {
     },
     include: {
       category: true,
+      organizer: {
+        select: {
+          id: true,
+          name: true,
+          profilePicture: true,
+          createdAt: true,
+        },
+      },
       tickets: {
         where: {
           deletedAt: null,
@@ -219,6 +231,7 @@ type UpdateEventInput = {
     quantity: number;
   }[];
 };
+
 export const updateEventService = async (input: UpdateEventInput) => {
   if (!input.tickets.length) {
     throw new ApiError("Minimal satu tipe tiket wajib diisi", 400);
@@ -395,6 +408,7 @@ export const updateEventService = async (input: UpdateEventInput) => {
     });
   });
 };
+
 export const deleteEventService = async (
   organizerId: bigint,
   eventId: bigint,

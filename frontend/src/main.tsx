@@ -36,6 +36,9 @@ import CheckInPage from "./pages/CheckInPage";
 import EventReviewsPage from "./pages/EventReviewsPage";
 import OrganizerVouchersPage from "./pages/OrganizerVouchersPage";
 import CouponPage from "./pages/CouponPage";
+import OrganizerProfilePage from "./pages/OrganizerProfile";
+import Contact from "./pages/Contact";
+import About from "./pages/About";
 
 const queryClient = new QueryClient();
 
@@ -68,6 +71,18 @@ const router = createBrowserRouter([
       {
         path: "/events/:id",
         element: <EventDetailPage />,
+      },
+      {
+        path: "/organizers/:id",
+        element: <OrganizerProfilePage />,
+      },
+      {
+        path: "/about",
+        element: <About />,
+      },
+      {
+        path: "/contact",
+        element: <Contact />,
       },
       {
         element: <RoleProtectedRoute allowedRole="CUSTOMER" />,

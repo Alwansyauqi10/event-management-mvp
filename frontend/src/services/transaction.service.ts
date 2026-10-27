@@ -6,6 +6,8 @@ export interface CreateTransactionInput {
   tickets: { ticketId: string; quantity: number }[];
   pointsToUse?: string | number;
   voucherCode?: string;
+  couponId?: string;
+
 }
 
 export interface CreatedTransaction {
@@ -140,4 +142,17 @@ export const getMyTransactions = async (): Promise<MyTransaction[]> => {
   );
 
   return response.data.data;
+};
+
+export interface AvailableCoupon {
+  id: string;
+  discountType: "PERCENTAGE" | "FIXED";
+  discountValue: string;
+  startAt: string;
+  endAt: string;
+}
+
+export const getMyCoupons = async (): Promise<AvailableCoupon[]> => {
+  const response = await api.get<AvailableCoupon[]>("/referral/coupons");
+  return response.data;
 };

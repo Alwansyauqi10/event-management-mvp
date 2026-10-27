@@ -65,6 +65,8 @@ export async function expireUnpaidTransactions(): Promise<void> {
       id: true,
       userId: true,
       eventId: true,
+      couponId: true,
+      voucherId: true,
     },
   });
 
@@ -87,6 +89,33 @@ export async function expireUnpaidTransactions(): Promise<void> {
 
         // Jika status sudah berubah, jangan kembalikan stok atau poin lagi.
         if (updated.count !== 1) return;
+
+        
+        // Kembalikan kuota Voucher jika transaksi menggunakan Voucher.
+        if (transaction.voucherId !== null) {
+          await tx.voucher.updateMany({
+            where: {
+              id: transaction.voucherId,
+              usedQuantity: { gt: 0 },
+            },
+            data: {
+              usedQuantity: { decrement: 1 },
+            },
+          });
+        }
+
+        // Kembalikan Coupon jika transaksi menggunakan Coupon.
+        if (transaction.couponId !== null) {
+          await tx.coupon.updateMany({
+            where: {
+              id: transaction.couponId,
+              userId: transaction.userId,
+            },
+            data: {
+              usedAt: null,
+            },
+          });
+        }
 
         const items = await tx.transactionItem.findMany({
           where: {

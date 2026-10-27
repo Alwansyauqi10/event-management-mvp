@@ -438,6 +438,7 @@ export const rejectOrganizerTransactionService = async ({
         userId: true,
         eventId: true,
         voucherId: true,
+        couponId: true,
         transactionCode: true,
         status: true,
         user: {
@@ -497,6 +498,19 @@ export const rejectOrganizerTransactionService = async ({
         },
         data: {
           usedQuantity: { decrement: 1 },
+        },
+      });
+    }
+
+    // Kembalikan Coupon jika transaksi menggunakan Coupon.
+    if (transaction.couponId !== null) {
+      await tx.coupon.updateMany({
+        where: {
+          id: transaction.couponId,
+          userId: transaction.userId,
+        },
+        data: {
+          usedAt: null,
         },
       });
     }

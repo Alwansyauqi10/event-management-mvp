@@ -15,7 +15,10 @@ type CreateTransactionInput = {
     quantity: number;
   }[];
   pointsToUse?: string | number;
-   voucherCode?: string;
+  voucherCode?: string;
+  couponId?: string;
+
+
 };
 
 const POINT_REFERENCE_TYPE = "EVENT_TRANSACTION";
@@ -274,113 +277,182 @@ export const createTransactionService = async (
     }
 
     
-const pointValue = BigInt(CHECKOUT_CONFIG.POINT_VALUE_IN_RUPIAH);
 
-const maxDiscount =
-  (subTotal *
-    BigInt(CHECKOUT_CONFIG.MAX_TOTAL_DISCOUNT_PERCENT)) /
-  100n;
+    const pointValue = BigInt(CHECKOUT_CONFIG.POINT_VALUE_IN_RUPIAH);
 
-let voucherId: bigint | null = null;
-let voucherDiscount = 0n;
+    const maxDiscount =
+      (subTotal *
+        BigInt(CHECKOUT_CONFIG.MAX_TOTAL_DISCOUNT_PERCENT)) /
+      100n;
 
-const voucherCode = input.voucherCode?.trim().toUpperCase();
+    let voucherId: bigint | null = null;
+    let voucherDiscount = 0n;
 
-if (voucherCode) {
-  if (voucherCode.length > 100) {
-    throw new ApiError("Kode voucher tidak valid", 400);
-  }
+    const voucherCode = input.voucherCode?.trim().toUpperCase();
 
-  const voucher = await tx.voucher.findFirst({
-    where: {
-      eventId,
-      code: voucherCode,
-      deletedAt: null,
-      startAt: { lte: now },
-      endAt: { gt: now },
-    },
-  });
+    if (voucherCode) {
+      if (voucherCode.length > 100) {
+        throw new ApiError("Kode voucher tidak valid", 400);
+      }
 
-  if (!voucher) {
-    throw new ApiError(
-      "Kode voucher tidak valid atau sudah kedaluwarsa",
-      400,
-    );
-  }
+      const voucher = await tx.voucher.findFirst({
+        where: {
+          eventId,
+          code: voucherCode,
+          deletedAt: null,
+          startAt: { lte: now },
+          endAt: { gt: now },
+        },
+      });
 
-  if (voucher.usedQuantity >= voucher.quota) {
-    throw new ApiError("Kuota voucher sudah habis", 400);
-  }
+      if (!voucher) {
+        throw new ApiError(
+          "Kode voucher tidak valid atau sudah kedaluwarsa",
+          400,
+        );
+      }
 
-  if (voucher.discountType === "PERCENTAGE") {
-    voucherDiscount =
-      (subTotal * voucher.discountValue) / 100n;
+      if (voucher.usedQuantity >= voucher.quota) {
+        throw new ApiError("Kuota voucher sudah habis", 400);
+      }
 
-    if (voucher.maxDiscount !== null) {
-      voucherDiscount =
-        voucherDiscount > voucher.maxDiscount
-          ? voucher.maxDiscount
-          : voucherDiscount;
+      if (voucher.discountType === "PERCENTAGE") {
+        voucherDiscount =
+          (subTotal * voucher.discountValue) / 100n;
+
+        if (voucher.maxDiscount !== null) {
+          voucherDiscount =
+            voucherDiscount > voucher.maxDiscount
+              ? voucher.maxDiscount
+              : voucherDiscount;
+        }
+      } else {
+        voucherDiscount = voucher.discountValue;
+      }
+
+      if (voucherDiscount > subTotal) {
+        voucherDiscount = subTotal;
+      }
+
+      if (voucherDiscount > maxDiscount) {
+        voucherDiscount = maxDiscount;
+      }
+
+      const reservedVoucher = await tx.voucher.updateMany({
+        where: {
+          id: voucher.id,
+          deletedAt: null,
+          usedQuantity: { lt: voucher.quota },
+          startAt: { lte: now },
+          endAt: { gt: now },
+        },
+        data: {
+          usedQuantity: { increment: 1 },
+        },
+      });
+
+      if (reservedVoucher.count !== 1) {
+        throw new ApiError(
+          "Kuota voucher baru saja habis. Silakan coba lagi",
+          409,
+        );
+      }
+
+      voucherId = voucher.id;
     }
-  } else {
-    voucherDiscount = voucher.discountValue;
-  }
 
-  // Diskon voucher tidak boleh melebihi subtotal
-  // atau batas maksimum diskon checkout.
-  if (voucherDiscount > subTotal) {
-    voucherDiscount = subTotal;
-  }
+    // Coupon referral: milik customer dan dapat dipakai lintas event.
+   
+    let couponId: bigint | null = null;
+    let couponDiscount = 0n;
 
-  if (voucherDiscount > maxDiscount) {
-    voucherDiscount = maxDiscount;
-  }
+    const selectedCouponId = input.couponId?.trim();
 
-  // Reservasi kuota secara atomik untuk mencegah
-  // dua checkout memakai kuota terakhir bersamaan.
-  const reservedVoucher = await tx.voucher.updateMany({
-    where: {
-      id: voucher.id,
-      deletedAt: null,
-      usedQuantity: { lt: voucher.quota },
-      startAt: { lte: now },
-      endAt: { gt: now },
-    },
-    data: {
-      usedQuantity: { increment: 1 },
-    },
-  });
+    if (selectedCouponId) {
+      if (!/^[1-9]\d*$/.test(selectedCouponId)) {
+        throw new ApiError("Coupon tidak valid", 400);
+      }
 
-  if (reservedVoucher.count !== 1) {
-    throw new ApiError(
-      "Kuota voucher baru saja habis. Silakan coba lagi",
-      409,
-    );
-  }
+      const coupon = await tx.coupon.findFirst({
+        where: {
+          id: BigInt(selectedCouponId),
+          userId: customerId,
+          usedAt: null,
+          startAt: { lte: now },
+          endAt: { gt: now },
+        },
+      });
 
-  voucherId = voucher.id;
-}
+      if (!coupon) {
+        throw new ApiError(
+          "Coupon tidak tersedia atau sudah kedaluwarsa",
+          400,
+        );
+      }
+
+      if (coupon.discountType === "PERCENTAGE") {
+        couponDiscount =
+          (subTotal * coupon.discountValue) / 100n;
+      } else {
+        couponDiscount = coupon.discountValue;
+      }
+
+      const remainingAfterVoucher = subTotal - voucherDiscount;
+      const remainingDiscountLimit = maxDiscount - voucherDiscount;
+
+      if (couponDiscount > remainingAfterVoucher) {
+        couponDiscount = remainingAfterVoucher;
+      }
+
+      if (couponDiscount > remainingDiscountLimit) {
+        couponDiscount = remainingDiscountLimit;
+      }
+
+      const reservedCoupon = await tx.coupon.updateMany({
+        where: {
+          id: coupon.id,
+          userId: customerId,
+          usedAt: null,
+          startAt: { lte: now },
+          endAt: { gt: now },
+        },
+        data: {
+          usedAt: now,
+        },
+      });
+
+      if (reservedCoupon.count !== 1) {
+        throw new ApiError(
+          "Coupon baru saja digunakan. Silakan pilih Coupon lain",
+          409,
+        );
+      }
+
+      couponId = coupon.id;
+    }
+
 
     const pointDiscount = pointsToUse * pointValue;
-    const remainingDiscountLimit = maxDiscount - voucherDiscount;
 
-    if (pointDiscount > subTotal - voucherDiscount) {
-      throw new ApiError(
-        "Total diskon melebihi subtotal",
-        400,
-      );
+    const remainingDiscountLimit =
+      maxDiscount - voucherDiscount - couponDiscount;
+
+    if (
+      pointDiscount >
+      subTotal - voucherDiscount - couponDiscount
+    ) {
+      throw new ApiError("Total diskon melebihi subtotal", 400);
     }
 
     if (pointDiscount > remainingDiscountLimit) {
       throw new ApiError(
-        "Total diskon poin dan voucher melebihi batas maksimum",
+        "Total diskon poin, voucher, dan Coupon melebihi batas maksimum",
         400,
       );
     }
 
     const totalAmount =
-      subTotal - voucherDiscount - pointDiscount;
-
+      subTotal - voucherDiscount - couponDiscount - pointDiscount;
 
     // Cadangkan stok tiket secara kondisional agar tidak overselling.
     for (const item of tickets) {
@@ -429,11 +501,12 @@ if (voucherCode) {
         userId: customerId,
         eventId,
         voucherId,
+        couponId,
         status: "WAITING_FOR_PAYMENT",
         subTotal,
         pointDiscount,
         voucherDiscount,
-        couponDiscount: 0n,
+        couponDiscount,
         totalAmount,
         paymentProofDeadline: paymentDeadline,
         items: {

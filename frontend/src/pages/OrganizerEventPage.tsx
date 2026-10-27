@@ -15,6 +15,7 @@ import {
   Pencil,
   Plus,
   Tag,
+  TicketPercent,
   Trash2,
   Users,
   X,
@@ -250,6 +251,15 @@ export default function OrganizerEventsPage() {
                             className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
                           >
                             <Users size={17} />
+                          </Link>
+
+                          <Link
+                            to={`/organizer/events/${event.id}/vouchers`}
+                            title="Kelola Voucher"
+                            aria-label={`Kelola voucher ${event.name}`}
+                            className="rounded-lg p-2 text-slate-500 transition hover:bg-violet-50 hover:text-violet-700"
+                          >
+                            <TicketPercent size={17} />
                           </Link>
 
                           <Link

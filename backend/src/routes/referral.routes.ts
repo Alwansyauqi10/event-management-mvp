@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  myCouponsController,
   pointController,
   pointHistoryController,
   userCouponsController,
@@ -17,9 +18,19 @@ referralRoutes.get(
   verifyToken(process.env.JWT_SECRET!),
   pointHistoryController,
 );
+<<<<<<< HEAD
 referralRoutes.get(
   "/coupons",
   verifyToken(process.env.JWT_SECRET!),
   userCouponsController,
 );
+=======
+
+referralRoutes.get(
+  "/coupons",
+  verifyToken(process.env.JWT_SECRET!),
+  myCouponsController,
+);
+
+>>>>>>> main
 export { referralRoutes };

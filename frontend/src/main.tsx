@@ -34,6 +34,8 @@ import PaymentPage from "./pages/PaymentPage";
 import TransactionHistoryPage from "./pages/TransactionHistoryPage";
 import CheckInPage from "./pages/CheckInPage";
 import EventReviewsPage from "./pages/EventReviewsPage";
+import OrganizerVouchersPage from "./pages/OrganizerVouchersPage";
+import CouponPage from "./pages/CouponPage";
 
 const queryClient = new QueryClient();
 
@@ -82,7 +84,10 @@ const router = createBrowserRouter([
             path: "/profile/points",
             element: <PointHistoryPage />,
           },
-
+          {
+            path: "/profile/coupons",
+            element: <CouponPage />,
+          },
           {
             path: "/payment/:transactionId",
             element: <PaymentPage />,
@@ -137,6 +142,10 @@ const router = createBrowserRouter([
           {
             path: "/organizer/events/:eventId/review",
             element: <EventReviewsPage />,
+          },
+          {
+            path: "/organizer/events/:eventId/vouchers",
+            element: <OrganizerVouchersPage />,
           },
           {
             path: "/organizer/events/:eventId/edit",

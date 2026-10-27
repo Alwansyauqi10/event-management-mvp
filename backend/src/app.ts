@@ -10,6 +10,8 @@ import transactionRouter from "./routes/transaction.routes.js";
 import paymentProofRouter from "./routes/payment-proof.routes.js";
 import checkInRouter from "./routes/checkIn.routes.js";
 import eventReviewRouter from "./routes/eventReview.routes.js";
+import voucherRouter from "./routes/voucher.route.js";
+
 
 dotenv.config();
 
@@ -19,6 +21,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/events", eventRoutes);
+app.use("/vouchers", voucherRouter);
 app.use("/auth", authRoutes);
 app.use("/referral", referralRoutes);
 app.use("/organizer", organizerRouter);
@@ -28,6 +31,7 @@ app.use("/organizer", organizerRouter);
 app.use("/organizer", checkInRouter);
 app.use("/transactions", paymentProofRouter);
 app.use("/event-reviews", eventReviewRouter);
+
 
 app.get("/", (req, res) => {
   res.json({ message: "Event Management API is running" });

@@ -41,7 +41,7 @@ function Navbar() {
   );
 
   return (
-    <nav className="absolute left-0 top-0 z-50 w-full border-b border-slate-100 bg-white/95 backdrop-blur-md">
+    <nav className="relative z-50 w-full border-b border-slate-100 bg-white/95 backdrop-blur-md">
       <div className="mx-auto flex h-19 max-w-7xl items-center justify-between px-6 lg:px-8">
         {/* Logo */}
         <Link to="/" onClick={closeMenus} className="shrink-0">

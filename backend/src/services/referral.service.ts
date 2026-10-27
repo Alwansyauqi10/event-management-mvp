@@ -54,3 +54,47 @@ export const pointHistoryService = async (userId: string) => {
     expiredAt: transaction.expiredAt,
   }));
 };
+
+export const getUserCouponsService = async (userId: string) => {
+  const now = new Date();
+
+  const coupons = await prisma.coupon.findMany({
+    where: {
+      userId: BigInt(userId),
+    },
+    select: {
+      id: true,
+      code: true,
+      discountType: true,
+      discountValue: true,
+      startAt: true,
+      endAt: true,
+      usedAt: true,
+      createdAt: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return coupons.map((coupon) => {
+    let status: "ACTIVE" | "USED" | "EXPIRED" | "UPCOMING";
+
+    if (coupon.usedAt) {
+      status = "USED";
+    } else if (now < coupon.startAt) {
+      status = "UPCOMING";
+    } else if (now > coupon.endAt) {
+      status = "EXPIRED";
+    } else {
+      status = "ACTIVE";
+    }
+
+    return {
+      ...coupon,
+      id: coupon.id.toString(),
+      discountValue: coupon.discountValue.toString(),
+      status,
+    };
+  });
+};

@@ -72,10 +72,7 @@ const router = createBrowserRouter([
         path: "/events/:id",
         element: <EventDetailPage />,
       },
-      {
-        path: "/organizers/:id",
-        element: <OrganizerProfilePage />,
-      },
+
       {
         path: "/about",
         element: <About />,
@@ -110,6 +107,10 @@ const router = createBrowserRouter([
           {
             path: "/transaction/history",
             element: <TransactionHistoryPage />,
+          },
+          {
+            path: "/organizers/:id",
+            element: <OrganizerProfilePage />,
           },
         ],
       },

@@ -91,18 +91,7 @@ function CouponPage() {
   return (
     <main className="min-h-screen bg-[#f6f7f9] px-4 py-8 sm:px-6 sm:py-12">
       <div className="mx-auto max-w-4xl">
-        <button
-          type="button"
-          onClick={() => navigate("/")}
-          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-slate-900"
-        >
-          ← Kembali ke Home
-        </button>
-
         <div className="mb-8">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-            AKUN SAYA
-          </p>
           <h1 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
             Kupon Saya
           </h1>
@@ -315,13 +304,6 @@ function CouponPage() {
         )}
 
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link
-            to="/profile"
-            className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            ← Profil Saya
-          </Link>
-
           <Link
             to="/profile/points"
             className="inline-flex items-center justify-center rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"

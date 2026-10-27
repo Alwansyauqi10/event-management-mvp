@@ -1,3 +1,4 @@
+
 import { Request, Response } from "express";
 import {
   getUserCouponsService,
@@ -6,7 +7,6 @@ import {
 } from "../services/referral.service.js";
 import { getMyCouponsService } from "../services/coupon.service.js";
 
-
 export const pointController = async (req: Request, res: Response) => {
   const userId = res.locals.user.id;
 
@@ -14,7 +14,11 @@ export const pointController = async (req: Request, res: Response) => {
 
   res.status(200).json(result);
 };
-export const pointHistoryController = async (req: Request, res: Response) => {
+
+export const pointHistoryController = async (
+  req: Request,
+  res: Response,
+) => {
   const userId = res.locals.user.id;
 
   const history = await pointHistoryService(userId);
@@ -25,8 +29,10 @@ export const pointHistoryController = async (req: Request, res: Response) => {
   });
 };
 
-<<<<<<< HEAD
-export const userCouponsController = async (req: Request, res: Response) => {
+export const userCouponsController = async (
+  req: Request,
+  res: Response,
+) => {
   try {
     const userId = res.locals.user?.id;
 
@@ -50,7 +56,8 @@ export const userCouponsController = async (req: Request, res: Response) => {
       message: "Gagal mengambil kupon",
     });
   }
-=======
+};
+
 export const myCouponsController = async (
   req: Request,
   res: Response,
@@ -60,5 +67,4 @@ export const myCouponsController = async (
   const coupons = await getMyCouponsService(userId);
 
   res.status(200).json(coupons);
->>>>>>> main
 };

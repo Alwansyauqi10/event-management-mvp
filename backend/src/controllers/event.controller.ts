@@ -109,6 +109,7 @@ export const getEventByIdController = async (req: Request, res: Response) => {
       return;
     }
 
+      
     const serializedEvent = {
       ...event,
       id: event.id.toString(),
@@ -117,6 +118,10 @@ export const getEventByIdController = async (req: Request, res: Response) => {
       category: {
         ...event.category,
         id: event.category.id.toString(),
+      },
+      organizer: {
+        ...event.organizer,
+        id: event.organizer.id.toString(),
       },
       tickets: event.tickets.map((ticket) => ({
         ...ticket,

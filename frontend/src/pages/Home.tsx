@@ -102,7 +102,7 @@ function Home() {
 
         <div className="absolute inset-0 bg-linear-to-r from-white via-white/85 to-white/10" />
 
-        <div className="relative mx-auto flex min-h-screen max-w-7xl items-center px-6 pt-18">
+        <div className="relative mx-auto flex min-h-screen max-w-7xl items-center px-6">
           <div className="w-full max-w-4xl">
             <p className="font-manrope text-sm font-bold uppercase tracking-[0.2em] text-haya-blue">
               Discover. Book. Experience.
@@ -176,13 +176,13 @@ function Home() {
                   ))}
                 </select>
               </div>
-
+{/* 
               <button
                 type="button"
                 className="mt-2 rounded-xl bg-haya-blue px-5 py-2 font-manrope text-sm font-semibold text-white transition hover:bg-haya-blue-light md:mt-0"
               >
                 Search
-              </button>
+              </button> */}
             </div>
 
             <div className="mt-6 flex max-w-4xl flex-wrap items-center gap-2">
@@ -247,14 +247,6 @@ function Home() {
                 Events You Might Like
               </h2>
             </div>
-
-            <a
-              href="/events"
-              className="hidden items-center gap-2 font-manrope text-sm font-semibold text-haya-blue transition hover:text-haya-blue-light sm:flex"
-            >
-              See All Events
-              <span className="text-lg">→</span>
-            </a>
           </div>
 
           {isLoading && (
@@ -302,7 +294,7 @@ function Home() {
                       className="h-52 w-full object-cover transition duration-500 group-hover:scale-105"
                     />
 
-                    <span className="absolute bottom-3 left-3 rounded-full bg-white px-3 py-1.5 font-manrope text-xs font-bold text-haya-blue shadow-sm">
+                    <span className="absolute top-3 left-3 rounded-full bg-white px-3 py-1.5 font-manrope text-xs font-bold text-haya-blue shadow-sm">
                       {event.category.name}
                     </span>
 

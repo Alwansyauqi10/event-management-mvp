@@ -49,6 +49,7 @@ export const getCheckInAttendeesService = async (
     },
     select: {
       id: true,
+      transactionCode: true,
       checkedInAt: true,
       user: {
         select: {
@@ -82,6 +83,7 @@ export const getCheckInAttendeesService = async (
     },
     data: transactions.map((transaction) => ({
       transactionId: transaction.id.toString(),
+      transactionCode: transaction.transactionCode,
       userId: transaction.user.id.toString(),
       name: transaction.user.name,
       email: transaction.user.email,
@@ -133,6 +135,7 @@ export const checkInTransactionService = async ({
         id: true,
         status: true,
         checkedInAt: true,
+        
         event: {
           select: {
             name: true,

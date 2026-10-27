@@ -153,6 +153,6 @@ export interface AvailableCoupon {
 }
 
 export const getMyCoupons = async (): Promise<AvailableCoupon[]> => {
-  const response = await api.get<AvailableCoupon[]>("/referral/coupons");
+  const response = await api.get<AvailableCoupon[]>("/referral/my-coupons");
   return response.data;
 };
